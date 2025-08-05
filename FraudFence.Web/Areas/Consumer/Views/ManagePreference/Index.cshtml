@@ -1,0 +1,50 @@
+@model List<FraudFence.Web.Areas.Consumer.Models.ManagePreferenceViewModel>
+
+@{
+    ViewData["Title"] = "Submitted Reports";
+}
+
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+<div class="container mt-5">
+    <h2 class="mb-4"><i class="fas fa-list-alt mr-2"></i> Submitted Scam Reports</h2>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">No scam reports submitted yet.</div>
+    }
+    else
+    {
+        <table class="table table-bordered table-striped">
+            <thead class="thead-dark">
+            <tr>
+                <th>SRCID</th>
+                <th>Category Name</th>
+                <th>Subscribed</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var vm in Model)
+            {
+                <tr>
+                    <td>@vm.ScamCategoryId</td>
+                    <td>@vm.ScamCategoryName</td>
+                    <td>
+                        <form asp-action="ToggleSubscription" method="post">
+                            <input type="hidden" name="ScamCategoryId" value="@vm.ScamCategoryId" />
+                            <input type="checkbox" name="Subscribed" value="true"
+                                   @(vm.Subscribed ? "checked" : "") onchange="this.form.submit()" />
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</div>

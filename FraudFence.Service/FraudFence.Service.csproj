@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Hangfire.AspNetCore" Version="1.8.20" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FraudFence.Data\FraudFence.Data.csproj" />
+    <ProjectReference Include="..\FraudFence.EntityModels\FraudFence.EntityModels.csproj" />
+  </ItemGroup>
+
+</Project>

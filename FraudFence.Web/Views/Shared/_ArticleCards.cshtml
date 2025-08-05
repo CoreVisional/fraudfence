@@ -1,0 +1,46 @@
+﻿@model IEnumerable<FraudFence.Web.Models.ArticleCardViewModel>
+
+<div class="articles-container mx-auto">
+    @foreach (var card in Model)
+    {
+        <div class="article-item">
+            <a asp-controller="Articles"
+               asp-action="Details"
+               asp-area=""
+               asp-route-id="@card.Id"
+               class="article-link text-decoration-none text-dark">
+
+                <!-- Top row: icon + date -->
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="article-icon">
+                        <div class="icon-wrapper d-flex align-items-center justify-content-center">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                    <small class="article-date">
+                        @card.CreatedAt.ToString("dd MMM yyyy")
+                    </small>
+                </div>
+
+                <!-- Excerpt -->
+                <p class="article-excerpt mb-3">
+                    @Html.Raw(card.Excerpt)
+                </p>
+
+                <!-- Category badge -->
+                <div class="text-right">
+                    <span class="badge badge-info">@card.CategoryName</span>
+                </div>
+            </a>
+        </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="no-articles text-center py-4">
+            <i class="fas fa-newspaper fa-2x mb-2"></i>
+            <h6>No articles found</h6>
+            <p class="mb-0 small">Check back later for new scam alerts and articles.</p>
+        </div>
+    }
+</div>

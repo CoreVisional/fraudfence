@@ -1,0 +1,1 @@
+﻿import '/js/publisher/articles/tinymce.js';

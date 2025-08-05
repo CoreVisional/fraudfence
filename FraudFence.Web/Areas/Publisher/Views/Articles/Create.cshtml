@@ -1,0 +1,50 @@
+﻿@model FraudFence.Web.Areas.Publisher.Models.Articles.ArticleCreateViewModel
+
+@{
+    ViewData["Title"] = "Create Article";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-gray-800">Create New Article</h1>
+                </div>
+                <div>
+                    <button type="submit" form="articleForm" class="btn btn-success">
+                        <i class="fas fa-save mr-2"></i>Save Article
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form id="articleForm" asp-action="Create" method="POST">
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <div class="form-group">
+            <label asp-for="Title" class="font-weight-bold"></label>
+            <input asp-for="Title" class="form-control form-control-lg" />
+            <span asp-validation-for="Title" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="ScamCategoryId" class="font-weight-bold">Category</label>
+            <select asp-for="ScamCategoryId" asp-items="Model.Categories" class="form-control">
+                <option value="">Select a category</option>
+            </select>
+            <span asp-validation-for="ScamCategoryId" class="text-danger"></span>
+        </div>
+
+        <div class="form-group mb-4">
+            <label asp-for="Content" class="font-weight-bold"></label>
+            <textarea asp-for="Content" class="article-content"></textarea>
+            <span asp-validation-for="Content" class="text-danger"></span>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

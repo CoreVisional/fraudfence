@@ -1,0 +1,20 @@
+﻿<li class="nav-item @Html.IsSelected("Post", "MyFeed")">
+    <a class="nav-link mr-4" asp-controller="Home" asp-action="Index" asp-area="Reviewer">
+        <i class="fas fa-home mr-1"></i>
+        <span>Home</span>
+    </a>
+</li>
+
+<li class="nav-item @Html.IsSelected("ScamReport", "ViewAll")">
+    <a class="nav-link" asp-controller="ScamReports" asp-action="Index" asp-area="Reviewer">
+        <i class="fas fa-list-alt mr-1"></i>
+        <span>Manage Scam Reports</span>
+    </a>
+</li>
+
+<li class="nav-item @Html.IsSelected("ScamReport", "Submit")">
+    <a class="nav-link mr-4" asp-controller="Posts" asp-action="Index" asp-area="Reviewer">
+        <i class="fas fa-triangle-exclamation mr-1"></i>
+        <span>Manage Posts</span>
+    </a>
+</li>

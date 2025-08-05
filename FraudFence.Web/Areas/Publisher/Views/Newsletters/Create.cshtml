@@ -1,0 +1,47 @@
+﻿@model FraudFence.Web.Areas.Publisher.Models.Newsletters.NewsletterCreateViewModel
+
+@{
+    ViewData["Title"] = "Schedule Newsletter";
+}
+
+<h1 class="h3 mb-4">Schedule Newsletter</h1>
+
+<form asp-action="Create" method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <div class="form-group">
+        <label asp-for="Subject"></label>
+        <input asp-for="Subject" class="form-control" />
+        <span asp-validation-for="Subject" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="IntroText">Preview</label>
+        <textarea asp-for="IntroText" class="form-control"></textarea>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="ScheduledAt">Schedule At</label>
+        <input asp-for="ScheduledAt" type="datetime-local" class="form-control" placeholder="" />
+        <span asp-validation-for="ScheduledAt" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label>Articles</label>
+        <select asp-for="SelectedArticleIds"
+                asp-items="Model.Articles"
+                class="form-control"
+                multiple
+                id="article-select">
+        </select>
+        <span asp-validation-for="SelectedArticleIds" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-success">
+        <i class="fas fa-save"></i> Schedule Newsletter
+    </button>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

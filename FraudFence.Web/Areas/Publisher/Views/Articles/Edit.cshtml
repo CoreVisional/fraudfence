@@ -1,0 +1,38 @@
+﻿@model FraudFence.Web.Areas.Publisher.Models.Articles.ArticleEditViewModel
+
+@{
+    ViewData["Title"] = "Edit Article";
+}
+
+<h3>Edit Article</h3>
+
+<hr />
+
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Title" class="control-label mt-2"></label>
+                <input asp-for="Title" class="form-control placeholder-visibility">
+                <span asp-validation-for="Title" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="ScamCategoryId" class="control-label mt-2">Category</label>
+                <select asp-for="ScamCategoryId" asp-items="Model.Categories" class="form-control">
+                    <option hidden disabled selected>-- Select Category --</option>
+                </select>
+                <span asp-validation-for="ScamCategoryId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Content" class="control-label mt-2"></label>
+                <textarea asp-for="Content" class="article-content"></textarea>
+                <span asp-validation-for="Content" class="text-danger"></span>
+            </div>
+            <input type="hidden" asp-for="Id" />
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary mt-3">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,91 @@
+﻿@model FraudFence.Web.Models.RegistrationViewModel
+@{
+    ViewData["Title"] = "Register";
+}
+
+<div class="container-fluid py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12">
+
+                <div class="text-center mb-4">
+                    <h1 class="h2 text-primary font-weight-bold">Consumer Portal</h1>
+                </div>
+
+                <div class="card shadow border-0">
+                    <div class="card-body p-0">
+                        <div class="row no-gutters">
+
+                            <div class="col-lg-8 p-5">
+                                <h2 class="h4 text-dark mb-4">Don't Have an Account?</h2>
+                                <p class="text-muted mb-4">
+                                    Signing up for a consumer account with FraudFence puts you in control of your experience with scam reporting and community protection.
+                                </p>
+                                <form asp-action="Register" asp-controller="Accounts" method="post" novalidate>
+                                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                                    <div class="form-group">
+                                        <label asp-for="Name" class="font-weight-bold"></label>
+                                        <input asp-for="Name" class="form-control" />
+                                        <span asp-validation-for="Name" class="text-danger"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label asp-for="Email" class="font-weight-bold"></label>
+                                        <p class="small text-muted">You will use your email address to log in.</p>
+                                        <input asp-for="Email" class="form-control" />
+                                        <span asp-validation-for="Email" class="text-danger"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label asp-for="Password" class="font-weight-bold"></label>
+                                        <p class="small text-muted">Password must be at least 8 characters long.</p>
+                                        <div class="position-relative">
+                                            <input asp-for="Password" class="form-control pr-5" />
+                                            <button type="button" class="btn btn-link position-absolute"
+                                                    style="right: 10px; top: 50%; transform: translateY(-50%); border: none; background: none;">
+                                                <i class="fas fa-eye text-muted"></i>
+                                            </button>
+                                        </div>
+                                        <span asp-validation-for="Password" class="text-danger"></span>
+                                    </div>
+                                    <div class="form-group mb-4">
+                                        <label asp-for="ConfirmPassword" class="font-weight-bold">Confirm Password</label>
+                                        <div class="position-relative">
+                                            <input asp-for="ConfirmPassword" class="form-control pr-5" />
+                                            <button type="button" class="btn btn-link position-absolute"
+                                                    style="right: 10px; top: 50%; transform: translateY(-50%); border: none; background: none;">
+                                                <i class="fas fa-eye text-muted"></i>
+                                            </button>
+                                        </div>
+                                        <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-primary btn-lg px-5">Sign Up</button>
+                                </form>
+                            </div>
+                            <div class="col-lg-4 bg-light p-5 text-center">
+                                <p class="text-muted mb-3">Already have an account?</p>
+                                <a asp-controller="Accounts" asp-action="Login" class="btn btn-dark px-4">Sign In</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.querySelectorAll('.btn-link').forEach(button => {
+            button.addEventListener('click', () => {
+                const input = button.parentElement.querySelector('input');
+                const icon  = button.querySelector('i');
+                const isPwd = input.type === 'password';
+                input.type  = isPwd ? 'text' : 'password';
+                icon.classList.toggle('fa-eye', !isPwd);
+                icon.classList.toggle('fa-eye-slash', isPwd);
+            });
+        });
+    </script>
+}

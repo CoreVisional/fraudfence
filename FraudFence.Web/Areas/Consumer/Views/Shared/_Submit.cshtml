@@ -1,0 +1,143 @@
+﻿@{
+int currentYear = DateTime.Now.Year;
+}
+
+<!DOCTYPE html>
+<html lang="en" class="h-100">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] | FraudFence</title>
+    <link rel="stylesheet" href="~/lib/fontawesome/css/all.min.css" />
+    <link rel="stylesheet" href="https://static2.sharepointonline.com/files/fabric/office-ui-fabric-core/11.0.0/css/fabric.min.css" />
+    <link rel="stylesheet" href="~/lib/sb-admin-2/css/sb-admin-2.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.4/css/dataTables.bootstrap4.min.css">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+</head>
+<body class="d-flex flex-column h-100">
+
+<!-- Top Navigation Bar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow">
+    <div class="container-fluid">
+        <!-- Brand -->
+        <a class="navbar-brand d-flex align-items-center mr-4" asp-area="" asp-controller="Home" asp-action="Index">
+            <i class="fas fa-shield-alt mr-2"></i>
+            <span class="font-weight-bold">FraudFence</span>
+        </a>
+
+        <!-- Mobile toggle button -->
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Navigation Menu -->
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav mr-auto">
+                <partial name="_Navigation" />
+            </ul>
+            <ul class="navbar-nav ml-auto">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                <!-- User Dropdown for authenticated users -->
+                <li class="nav-item dropdown mx-2">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown"
+                       role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <img class="img-profile rounded-circle mr-2" src="~/lib/sb-admin-2/img/undraw_profile.svg" style="width: 30px; height: 30px;">
+                        <span class="d-none d-md-inline text-white">@User.Identity?.Name</span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right shadow" aria-labelledby="userDropdown">
+                        <a class="dropdown-item" asp-controller="Account" asp-action="Profile">
+                            <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
+                            Profile
+                        </a>
+                        @if (User.IsInRole("Admin"))
+                        {
+                        <a class="dropdown-item" asp-area="Admin" asp-controller="Home" asp-action="Index">
+                            <i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i>
+                            Admin Panel
+                        </a>
+                        }
+                        @if (User.IsInRole("Publisher"))
+                        {
+                        <a class="dropdown-item" asp-area="Publisher" asp-controller="Home" asp-action="Index">
+                            <i class="fas fa-edit fa-sm fa-fw mr-2 text-gray-400"></i>
+                            Publisher
+                        </a>
+                        }
+                        @if (User.IsInRole("Reviewer"))
+                        {
+                        <a class="dropdown-item" asp-area="Reviewer" asp-controller="Home" asp-action="Index">
+                            <i class="fas fa-search fa-sm fa-fw mr-2 text-gray-400"></i>
+                            Reviewer
+                        </a>
+                        }
+                        <div class="dropdown-divider"></div>
+                        <form asp-controller="Accounts" asp-area="" asp-action="Logout" method="post" style="display: inline;">
+                            <button type="submit" class="dropdown-item">
+                                <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                Logout
+                            </button>
+                        </form>
+                    </div>
+                </li>
+                }
+                else
+                {
+                <li class="nav-item mx-2">
+                    <a class="nav-link text-white" asp-controller="Accounts" asp-action="Login">
+                        <i class="fas fa-user mr-2"></i>Sign In
+                    </a>
+                </li>
+                }
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content (No Sidebar) -->
+<main role="main" class="flex-shrink-0">
+    @RenderBody()
+</main>
+
+<footer class="sticky-footer mt-auto">
+    <div class="container my-auto">
+        <div class="copyright text-center my-auto">
+            &copy; @currentYear - FraudFence
+        </div>
+    </div>
+</footer>
+
+<!-- Scroll to Top Button-->
+<a class="scroll-to-top rounded" href="#page-top">
+    <i class="fas fa-angle-up"></i>
+</a>
+
+<!-- Bootstrap core JavaScript-->
+<script src="~/lib/sb-admin-2/vendor/jquery/jquery.min.js"></script>
+<script src="~/lib/sb-admin-2/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+<!-- Core plugin JavaScript-->
+<script src="~/lib/sb-admin-2/vendor/jquery-easing/jquery.easing.min.js"></script>
+
+<!-- Custom scripts for all pages-->
+<script src="~/lib/sb-admin-2/js/sb-admin-2.min.js"></script>
+
+<!-- Page level plugins -->
+<script src="~/lib/sb-admin-2/vendor/chart.js/Chart.min.js"></script>
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+<script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.11.4/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.11.4/js/dataTables.bootstrap5.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $('table.table-show-dt').DataTable({
+            "order": []
+        });
+    });
+</script>
+</body>
+</html>

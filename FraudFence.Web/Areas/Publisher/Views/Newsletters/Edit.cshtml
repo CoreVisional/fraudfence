@@ -1,0 +1,52 @@
+﻿@model FraudFence.Web.Areas.Publisher.Models.Newsletters.NewsletterEditViewModel
+@{
+    ViewData["Title"] = "Edit Scheduled Newsletter";
+}
+
+<div class="d-sm-flex align-items-center justify-content-between mb-3">
+    <h3 class="mb-0">Edit Newsletter</h3>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back
+    </a>
+</div>
+
+<form asp-action="Edit" method="post">
+    <input type="hidden" asp-for="Id" />
+
+    <div class="form-group">
+        <label asp-for="Subject"></label>
+        <input asp-for="Subject" class="form-control" />
+        <span asp-validation-for="Subject" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="IntroText"></label>
+        <textarea asp-for="IntroText" class="form-control"></textarea>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="ScheduledAt"></label>
+        <input asp-for="ScheduledAt"
+               type="datetime-local"
+               class="form-control" />
+        <span asp-validation-for="ScheduledAt" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label>Articles</label>
+        <select asp-for="SelectedArticleIds"
+                asp-items="Model.Articles"
+                multiple
+                class="form-control">
+        </select>
+        <span asp-validation-for="SelectedArticleIds" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+        <i class="fas fa-save"></i> Save Changes
+    </button>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

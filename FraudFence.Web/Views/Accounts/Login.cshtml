@@ -1,0 +1,78 @@
+﻿@model FraudFence.Web.Models.LoginViewModel
+
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="d-flex align-items-center justify-content-center" style="min-height: calc(100vh - 150px);">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12">
+                <div class="text-center mb-4">
+                    <h1 class="h2 text-primary font-weight-bold">Sign In to FraudFence</h1>
+                </div>
+                <div class="card shadow border-0">
+                    <div class="card-body p-0">
+                        <div class="row no-gutters">
+                            <div class="col-lg-8 p-5">
+                                <form asp-action="Login" asp-controller="Accounts" method="post" novalidate>
+                                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                                    <div class="form-group">
+                                        <label asp-for="Email" class="font-weight-bold"></label>
+                                        <input asp-for="Email" class="form-control form-control-lg" />
+                                        <span asp-validation-for="Email" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label asp-for="Password" class="font-weight-bold"></label>
+                                        <div class="position-relative">
+                                            <input asp-for="Password" class="form-control form-control-lg pr-5" />
+                                            <button type="button" class="btn btn-link position-absolute"
+                                                    style="right: 10px; top: 50%; transform: translateY(-50%); border: none; background: none;">
+                                                <i class="fas fa-eye text-muted"></i>
+                                            </button>
+                                        </div>
+                                        <span asp-validation-for="Password" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <a asp-controller="Accounts" asp-action="ForgotPassword" class="text-primary">
+                                            Forgot password?
+                                        </a>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-success btn-lg px-5">Sign In</button>
+                                </form>
+                            </div>
+
+                            <div class="col-lg-4 bg-light p-5">
+                                <div class="text-center mb-4">
+                                    <h5 class="text-dark mb-3">Don't Have an Account?</h5>
+                                    <a asp-controller="Accounts" asp-action="Register" class="btn btn-primary px-4">Register as Consumer</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.querySelectorAll('.btn-link').forEach(button => {
+            button.addEventListener('click', () => {
+                const input = button.parentElement.querySelector('input');
+                const icon  = button.querySelector('i');
+                const isPwd = input.type === 'password';
+                input.type  = isPwd ? 'text' : 'password';
+                icon.classList.toggle('fa-eye', !isPwd);
+                icon.classList.toggle('fa-eye-slash', isPwd);
+            });
+        });
+    </script>
+}

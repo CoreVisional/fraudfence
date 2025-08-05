@@ -1,0 +1,81 @@
+﻿@model FraudFence.Web.Areas.Publisher.Models.PublisherDashboardViewModel
+
+@{
+    ViewData["Title"] = "Publisher Portal";
+}
+
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Publisher Dashboard</h1>
+</div>
+
+<div class="row">
+    <!-- Total Articles -->
+    <div class="col-md-3 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <a asp-area="Publisher" asp-controller="Articles" asp-action="Index" class="text-decoration-none text-dark">
+                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                        Total Articles
+                    </div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                        @Model.TotalArticles
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Newsletters -->
+    <div class="col-md-3 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <a asp-area="Publisher" asp-controller="Newsletters" asp-action="Index" class="text-decoration-none text-dark">
+                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                        Pending Newsletters
+                    </div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                        @Model.PendingNewsletters
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sent This Month -->
+    <div class="col-md-3 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                    Sent This Month
+                </div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800">
+                    @Model.SentThisMonth
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">Upcoming Newsletters</div>
+    <ul class="list-group list-group-flush">
+        @if (Model.UpcomingNewsletters.Any())
+        {
+            @foreach (var nl in Model.UpcomingNewsletters)
+            {
+                <li class="list-group-item">
+                    <a asp-area="Publisher"
+                       asp-controller="Newsletters"
+                       asp-action="Details"
+                       asp-route-id="@nl.Id">
+                       @nl.Subject
+                    </a>
+                </li>
+            }
+        }
+        else
+        {
+            <li class="list-group-item text-muted">None scheduled</li>
+        }
+    </ul>
+</div>

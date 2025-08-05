@@ -1,0 +1,5 @@
+﻿@model FraudFence.Web.Models.ArticleDetailsViewModel
+@{
+    ViewData["Title"] = Model.Title;
+}
+@await Html.PartialAsync("_ArticleDetails", Model)

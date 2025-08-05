@@ -1,0 +1,54 @@
+@model List<FraudFence.EntityModels.Models.ExternalAgency>
+@{
+    ViewData["Title"] = "External Agencies";
+    var currentSearch = ViewBag.CurrentSearch as string;
+    var showDisabled = ViewBag.ShowDisabled as bool?;
+}
+
+<h1>External Agencies</h1>
+<form asp-action="Index" method="get" class="form-inline mb-3">
+    <div class="form-group mr-2">
+        <input type="text" name="search" value="@currentSearch" class="form-control" placeholder="Search by name, email, or phone" />
+    </div>
+    <div class="form-group mr-2">
+        <select name="showDisabled" class="form-control">
+            <option value="">All</option>
+            <option value="false" selected="@(showDisabled == false ? "selected" : null)">Active</option>
+            <option value="true" selected="@(showDisabled == true ? "selected" : null)">Disabled</option>
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Filter</button>
+    <a asp-action="Index" class="btn btn-secondary ml-2">Reset</a>
+</form>
+<a asp-action="Create" class="btn btn-success mb-3">Create Agency</a>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var agency in Model)
+        {
+            <tr>
+                <td>@agency.Name</td>
+                <td>@agency.Email</td>
+                <td>@agency.Phone</td>
+                <td>@(agency.IsDisabled ? "Disabled" : "Active")</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@agency.Id" class="btn btn-sm btn-primary">Edit</a>
+                    <form asp-action="ToggleActive" asp-route-id="@agency.Id" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-warning">@((agency.IsDisabled ? "Activate" : "Deactivate"))</button>
+                    </form>
+                    <form asp-action="Delete" asp-route-id="@agency.Id" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this agency?');">
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table> 

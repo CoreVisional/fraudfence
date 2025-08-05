@@ -1,0 +1,42 @@
+﻿<li class="nav-item @Html.IsSelected("Post", "MyFeed")">
+    <a class="nav-link mr-4" asp-controller="Home" asp-action="Index" asp-area="Consumer">
+        <i class="fas fa-home mr-1"></i>
+        <span>Home</span>
+    </a>
+</li>
+
+<li class="nav-item @Html.IsSelected("ScamReport", "ViewAll")">
+    <a class="nav-link" asp-controller="ScamReport" asp-action="ViewAll" asp-area="Consumer">
+        <i class="fas fa-list-alt mr-1"></i>
+        <span>Submitted Reports</span>
+    </a>
+</li>
+
+<li class="nav-item @Html.IsSelected("ScamReport", "Submit")">
+    <a class="nav-link mr-4" asp-controller="ScamReport" asp-action="Submit" asp-area="Consumer">
+        <i class="fas fa-triangle-exclamation mr-1"></i>
+        <span>Report a Scam</span>
+    </a>
+</li>
+
+<li class="nav-item @Html.IsSelected("Articles", "active")">
+    <a class="nav-link mr-4" asp-controller="Articles" asp-action="Index" asp-area="Consumer">
+        <i class="fas fa-book mr-1"></i>
+        <span>Articles</span>
+    </a>
+</li>
+
+<li class="nav-item @Html.IsSelected("Post", "MyPosts")">
+    <a class="nav-link" asp-controller="Post" asp-action="MyPosts" asp-area="Consumer">
+        <i class="fas fa-user-alt mr-1"></i>
+        <span>My Posts</span>
+    </a>
+</li>
+
+
+<li class="nav-item @Html.IsSelected("ManagePreference", "Index")">
+    <a class="nav-link" asp-controller="ManagePreference" asp-action="Index" asp-area="Consumer">
+        <i class="fas fa-gear mr-1"></i>
+        <span>Manage Preference</span>
+    </a>
+</li>

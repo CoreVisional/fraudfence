@@ -1,0 +1,16 @@
+﻿@model FraudFence.Web.Models.ArticleDetailsViewModel
+
+    
+@{
+    ViewData["Title"] = Model.Title;
+    var layoutPath = "_Layout";
+
+    if (User.Identity?.IsAuthenticated == true && User.IsInRole("Consumer"))
+    {
+        layoutPath = "~/Areas/Consumer/Views/Shared/_Layout.cshtml";
+    }
+
+    Layout = layoutPath;
+}
+
+@await Html.PartialAsync("_ArticleDetails", Model)

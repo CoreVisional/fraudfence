@@ -1,0 +1,21 @@
+﻿<li class="nav-item @Html.IsSelected("Home", "active")">
+    <a class="nav-link mr-4" asp-controller="Home" asp-action="Index" asp-area="">
+        <i class="fas fa-home mr-1"></i>
+        <span>Home</span>
+    </a>
+</li>
+
+
+<li class="nav-item @Html.IsSelected("ScamReport", "active")">
+    <a class="nav-link mr-4" asp-controller="ScamReport" asp-action="Submit" asp-area="Consumer">
+        <i class="fas fa-triangle-exclamation mr-1"></i>
+        <span>Report a Scam</span>
+    </a>
+</li>
+
+<li class="nav-item @Html.IsSelected("Articles", "active")">
+    <a class="nav-link" asp-controller="Articles" asp-action="Index" asp-area="">
+        <i class="fas fa-book mr-1"></i>
+        <span>Articles</span>
+    </a>
+</li>

@@ -1,0 +1,91 @@
+@using FraudFence.EntityModels.Enums
+@model List<FraudFence.Web.Areas.Consumer.Models.ViewAllReportViewModel>
+
+@{
+    ViewData["Title"] = "Submitted Reports";
+}
+
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+<div class="container mt-5">
+    <h2 class="mb-4"><i class="fas fa-list-alt mr-2"></i> Submitted Scam Reports</h2>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">No scam reports submitted yet.</div>
+    }
+    else
+    {
+        <table class="table table-bordered table-striped">
+            <thead class="thead-dark">
+            <tr>
+                <th>SRID</th>
+                <th>Category</th>
+                <th>Reporter</th>
+                <th>Email</th>
+                <th>Encountered On</th>
+                <th>Status</th>
+                <th>Description</th>
+                <th>Operation</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var report in Model)
+            {
+                <tr>
+                    <td>@report.Id</td>
+                    <td>@report.ScamCategoryName</td>
+                    <td>@report.ReporterName</td>
+                    <td>@report.ReporterEmail</td>
+                    <td>@report.FirstEncounteredOn.ToShortDateString()</td>
+                    <td>@report.Status.ToString()</td>
+                    <td>@report.Description</td>
+                    <td>
+                        @if (@report.IsPosted == false && @report.Status == ReportStatus.Verified && @report.PostStatus != PostStatus.Accepted)
+                        {
+                            <form asp-action="Post" asp-route-id="@report.Id" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-primary" onclick="return confirm('Are you sure you want to post this report?');">
+                                    Post It
+                                </button>
+                            </form>
+                        }
+                        
+                        else if (@report.PostStatus == PostStatus.Accepted)
+                        {
+                            <button type="button" class="btn btn-sm btn-success" disabled>
+                                <i class="fas fa-check-circle mr-1"></i> Posted
+                            </button>
+                            
+                        }
+                        else if (@report.Status == ReportStatus.Rejected || @report.PostStatus == PostStatus.Rejected){
+                            <button type="button" class="btn btn-sm btn-danger" disabled>
+                                <i class="fas fa-close mr-1"></i> Rejected
+                            </button>
+                        }
+                        
+                        else if (@report.PostStatus != PostStatus.Accepted && @report.IsPosted)
+                        {
+                            <button type="button" class="btn btn-sm btn-warning" disabled>
+                                <i class="fas fa-clock mr-1"></i> Waiting for acceptance...
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-sm btn-warning" disabled>
+                                <i class="fas fa-clock mr-1"></i> Waiting for verification...
+                            </button>
+                        }
+                        
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</div>

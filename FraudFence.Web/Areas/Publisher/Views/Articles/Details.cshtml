@@ -1,0 +1,92 @@
+﻿@model FraudFence.Web.Areas.Publisher.Models.Articles.ArticleDetailsViewModel
+
+@{
+    ViewData["Title"] = "Article Details";
+}
+
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h3 class="mb-0">Article Details</h3>
+    <div class="action-buttons">
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning shadow-sm">
+            <i class="fas fa-pen fa-fw"></i> Edit Article
+        </a>
+    </div>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary">
+            <i class="fas fa-file-alt fa-fw mr-2"></i>Article Overview
+        </h6>
+        <div class="article-badges">
+            <span class="badge badge-info">
+                <i class="fas fa-tag fa-fw"></i> @Model.CategoryName
+            </span>
+        </div>
+    </div>
+    <div class="card-body">
+        <h2 class="article-title text-dark mb-4">@Model.Title</h2>
+
+        <div class="article-metadata">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="meta-item">
+                        <div class="meta-label">
+                            <i class="fas fa-calendar-plus text-success fa-fw"></i>
+                            <small class="text-muted font-weight-bold">CREATED</small>
+                        </div>
+                        <div class="meta-value">
+                            <strong>@Model.CreatedAt.ToString("MMM dd, yyyy")</strong><br>
+                            <span class="text-muted">@Model.CreatedAt.ToString("h:mm tt")</span>
+                        </div>
+                    </div>
+                </div>
+
+                @if (Model.UpdatedAt.HasValue)
+                {
+                    <div class="col-md-6">
+                        <div class="meta-item">
+                            <div class="meta-label">
+                                <i class="fas fa-edit text-warning fa-fw"></i>
+                                <small class="text-muted font-weight-bold">LAST UPDATED</small>
+                            </div>
+                            <div class="meta-value">
+                                <strong>@Model.UpdatedAt.Value.ToString("MMM dd, yyyy")</strong><br>
+                                <span class="text-muted">@Model.UpdatedAt.Value.ToString("h:mm tt")</span>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="col-md-6">
+                        <div class="meta-item meta-item-inactive">
+                            <div class="meta-label">
+                                <i class="fas fa-clock text-muted fa-fw"></i>
+                                <small class="text-muted font-weight-bold">LAST UPDATED</small>
+                            </div>
+                            <div class="meta-value">
+                                <em class="text-muted">Never updated</em>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">
+            <i class="fas fa-file-text fa-fw mr-2"></i>Article Content
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="article-content-wrapper">
+            <div class="article-content-display">
+                @Html.Raw(Model.Content)
+            </div>
+        </div>
+    </div>
+</div>

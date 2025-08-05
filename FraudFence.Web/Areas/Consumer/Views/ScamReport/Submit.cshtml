@@ -1,0 +1,86 @@
+@using FraudFence.Web.Areas.Consumer.Models
+@model FraudFence.Web.Areas.Consumer.Models.SubmitReportViewModel
+
+@{
+    if (User.Identity?.IsAuthenticated == true)
+    {
+    }
+    else
+    {
+        Layout = "~/Views/Shared/_Layout.cshtml";
+    }
+    
+    ViewData["Title"] = "Submit Report";
+}
+
+
+
+<div class="container mt-5">
+    <h2 class="mb-4"><i class="fas fa-triangle-exclamation mr-2"></i> Submit a Scam Report</h2>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+
+    <form id="submitReportFor" asp-action="Submit" method="post" enctype="multipart/form-data" novalidate>
+    @Html.AntiForgeryToken()
+
+    <div class="form-group">
+        <label>Scam Category</label>
+        <select asp-for="ScamCategoryId" asp-items="Model.ScamCategories" class="form-control" id="ScamCategoryId">
+            <option value="">--Select here--</option>
+        </select>
+        <span asp-validation-for="ScamCategoryId" class="text-danger"></span>
+    </div>
+    
+    <div class="form-group">
+        <label>(Optional) External Agency</label>
+        <select asp-for="ExternalAgencyId" asp-items="Model.ExternalAgencies" class="form-control" id="ExternalAgencyId">
+            <option value="">--Select here--</option>
+        </select>
+        <span asp-validation-for="ExternalAgencyId" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+            <label for="FirstEncounteredOn">First Encountered On</label>
+            <input asp-for="FirstEncounteredOn" class="form-control" type="date" id="FirstEncounteredOn" />
+            <span asp-validation-for="FirstEncounteredOn" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label for="Description">Description</label>
+            <textarea asp-for="Description" class="form-control" rows="5" id="Description"></textarea>
+            <span asp-validation-for="Description" class="text-danger"></span>
+        </div>
+
+        @if (User.Identity?.IsAuthenticated == false)
+        {
+            <div class="form-group">
+                <label for="ReporterName">Your Name</label>
+                <input asp-for="ReporterName" class="form-control" id="ReporterName"/>
+                <span asp-validation-for="ReporterName" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="ReporterEmail">Your Email</label>
+                <input asp-for="ReporterEmail" class="form-control" id="ReporterEmail" />
+                <span asp-validation-for="ReporterEmail" class="text-danger"></span>
+            </div>
+        }
+
+        @* <div class="form-group"> *@
+        @*     <label for="Attachments">Upload Attachments</label> *@
+        @*     <input asp-for="Attachments" type="file" class="form-control-file" accept="image/png, image/jpeg" multiple id="Attachments" /> *@
+        @* </div> *@
+
+        <button type="submit" class="btn btn-primary mt-3">
+            <i class="fas fa-paper-plane mr-1"></i> Submit Report
+        </button>
+    </form>
+
+</div>
+
+@section Scripts {
+    @* <partial name="_ValidationScriptsPartial" /> *@
+}

@@ -1,0 +1,224 @@
+﻿@model FraudFence.Web.Areas.Publisher.Models.Newsletters.NewsletterDetailsViewModel
+
+@{
+    ViewData["Title"] = "Newsletter Details";
+}
+
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h3 class="mb-0">Newsletter Details</h3>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary">
+            <i class="fas fa-envelope fa-fw mr-2"></i>Newsletter Overview
+        </h6>
+        <div class="status-badges">
+            @if (Model.SentAt.HasValue)
+            {
+                <span class="badge badge-success">
+                    <i class="fas fa-check-circle fa-fw"></i> Sent
+                </span>
+            }
+            else
+            {
+                <span class="badge badge-warning">
+                    <i class="fas fa-clock fa-fw"></i> Scheduled
+                </span>
+            }
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-lg-8">
+                <h4 class="text-dark mb-3">@Model.Subject</h4>
+
+                @if (!string.IsNullOrEmpty(Model.IntroText))
+                {
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading mb-2">
+                            <i class="fas fa-info-circle fa-fw"></i> Introduction
+                        </h6>
+                        <p class="mb-0">@Model.IntroText</p>
+                    </div>
+                }
+            </div>
+            <div class="col-lg-4">
+                <div class="newsletter-meta">
+                    <div class="meta-item mb-3">
+                        <div class="meta-label">
+                            <i class="fas fa-calendar-alt text-primary fa-fw"></i>
+                            <small class="text-muted font-weight-bold">SCHEDULED FOR</small>
+                        </div>
+                        <div class="meta-value">
+                            <strong>@Model.ScheduledAt.ToString("MMM dd, yyyy")</strong><br>
+                            <span class="text-muted">@Model.ScheduledAt.ToString("h:mm tt")</span>
+                        </div>
+                    </div>
+
+                    <div class="meta-item">
+                        <div class="meta-label">
+                            <i class="fas fa-paper-plane text-success fa-fw"></i>
+                            <small class="text-muted font-weight-bold">SENT ON</small>
+                        </div>
+                        <div class="meta-value">
+                            @if (Model.SentAt.HasValue)
+                            {
+                                <strong>@Model.SentAt.Value.ToString("MMM dd, yyyy")</strong>
+                            
+                                <br>
+                                <span class="text-muted">@Model.SentAt.Value.ToString("h:mm tt")</span>
+                            }
+                            else
+                            {
+                                <em class="text-muted">Not sent yet</em>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary">
+            <i class="fas fa-newspaper fa-fw mr-2"></i>Articles in Newsletter
+        </h6>
+        <span class="badge badge-pill badge-primary">@Model.Articles.Count() article@(Model.Articles.Count() != 1 ? "s" : "")</span>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Articles.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="border-0 px-4 py-3">
+                                <i class="fas fa-file-alt fa-fw mr-1"></i>Article Title
+                            </th>
+                            <th class="border-0 px-4 py-3">
+                                <i class="fas fa-tag fa-fw mr-1"></i>Category
+                            </th>
+                            <th class="border-0 px-4 py-3 text-center">
+                                <i class="fas fa-toggle-on fa-fw mr-1"></i>Status
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var article in Model.Articles)
+                        {
+                            <tr class="@(article.IsDisabled ? "table-secondary" : "")">
+                                <td class="px-4 py-3">
+                                    <div class="d-flex align-items-center">
+                                        @if (article.IsDisabled)
+                                        {
+                                            <i class="fas fa-eye-slash text-muted fa-fw mr-2"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="fas fa-file-alt text-primary fa-fw mr-2"></i>
+                                        }
+                                        <span class="@(article.IsDisabled ? "text-muted" : "text-dark")">
+                                            @article.Title
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="badge badge-outline-primary px-3 py-1">
+                                        @article.CategoryName
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    @if (article.IsDisabled)
+                                    {
+                                        <span class="badge badge-danger px-3 py-2">
+                                            <i class="fas fa-times-circle fa-fw"></i> Removed
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-success px-3 py-2">
+                                            <i class="fas fa-check-circle fa-fw"></i> Active
+                                        </span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-newspaper text-muted" style="font-size: 3rem;"></i>
+                <h5 class="text-muted mt-3">No Articles Found</h5>
+                <p class="text-muted">This newsletter doesn't contain any articles yet.</p>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .newsletter-meta .meta-item {
+        padding: 15px;
+        background: #f8f9fc;
+        border-radius: 8px;
+        border-left: 4px solid #5a67d8;
+    }
+
+    .newsletter-meta .meta-label {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+        .newsletter-meta .meta-label i {
+            margin-right: 8px;
+        }
+
+    .newsletter-meta .meta-value {
+        font-size: 14px;
+    }
+
+    .badge-outline-primary {
+        color: #5a67d8;
+        background-color: transparent;
+        border: 1px solid #5a67d8;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(90, 103, 216, 0.05);
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+        .card-header .text-primary {
+            color: white !important;
+        }
+
+        .card-header .badge-primary {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+    .status-badges .badge {
+        font-size: 0.8rem;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .alert-info {
+        background-color: #e3f2fd;
+        border-color: #90caf9;
+        color: #0d47a1;
+    }
+
+        .alert-info .alert-heading {
+            color: #1565c0;
+        }
+</style>

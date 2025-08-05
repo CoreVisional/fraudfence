@@ -1,0 +1,7 @@
+﻿@model List<FraudFence.Web.Models.ArticleCardViewModel>
+
+@{
+    ViewData["Title"] = "Latest Scam Articles";
+}
+
+@await Html.PartialAsync("_ArticleCards", Model)

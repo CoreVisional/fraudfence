@@ -1,0 +1,1 @@
+web: dotnet FraudFence.Web.dll

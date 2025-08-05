@@ -1,0 +1,41 @@
+@{
+    ViewData["Title"] = "Reviewer Dashboard";
+}
+
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Reviewer Dashboard</h1>
+</div>
+
+<div class="row">
+    <div class="col-xl-6 col-md-6 mb-4">
+        <a asp-area="Reviewer" asp-controller="ScamReports" asp-action="Index" class="text-decoration-none">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body d-flex align-items-center">
+                    <div class="mr-3">
+                        <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">View Reports</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">Manage scam reports</div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-xl-6 col-md-6 mb-4">
+        <a asp-area="Reviewer" asp-controller="Posts" asp-action="Index" class="text-decoration-none">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body d-flex align-items-center">
+                    <div class="mr-3">
+                        <i class="fas fa-comments fa-2x text-gray-300"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Moderate Posts</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">Approve or reject scam posts</div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
