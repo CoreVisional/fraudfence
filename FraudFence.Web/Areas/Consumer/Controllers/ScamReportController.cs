@@ -11,6 +11,16 @@ using System.Text.Json;
 using FraudFence.Service;
 using FraudFence.Service.Common;
 
+
+//Amazon
+using Amazon;
+using Amazon.S3;
+using Amazon.S3.Model;
+using Microsoft.Extensions.Configuration;
+using System.IO;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
+
 namespace FraudFence.Web.Areas.Consumer.Controllers;
 
 [Area("Consumer")]
@@ -19,10 +29,27 @@ public class ScamReportController(
     ScamReportService _scamReportService,
     ScamCategoryService _scamCategoryService,
     ExternalAgencyService _externalAgencyService,
+    AttachmentService _attachmentService,
+    ScamReportAttachmentService _scamReportAttachmentService,
+    PostAttachmentService _postAttachmentService,
     PostService _postService) : Controller
 {
     
-    
+    private List<string> getValues()
+    {
+        List<string> values = new List<string>();
+        
+        var builder = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json");
+        IConfigurationRoot configure = builder.Build();
+        
+        values.Add(configure["AwsAccessKeyId"]);
+        values.Add(configure["AwsSecretAccessKey"]);
+        values.Add(configure["AwsSessionToken"]);
+        
+        return values;
+    }
     
 
     [HttpPost]
@@ -69,6 +96,26 @@ public class ScamReportController(
         };
         
         _postService.AddPost(post);
+
+        List<ScamReportAttachment> scamReportAttachments =
+            await _scamReportAttachmentService.GetScamReportAttachmentByScamReportId(scamReportId);
+        
+        
+        foreach (ScamReportAttachment scamReportAttachment in scamReportAttachments)
+        {
+            PostAttachment postAttachment = new PostAttachment
+            {
+                PostId = post.Id,
+                AttachmentId = scamReportAttachment.AttachmentId,
+                CreatedBy = currentUser.Id,
+                ModifiedBy = currentUser.Id,
+                LastModified = DateTime.Now
+            };
+
+            await _postAttachmentService.AddPostAttachmentAsync(postAttachment);
+        }
+        
+        
         
         TempData["SuccessMessage"] = "Post request sent successfully.";
 
@@ -200,9 +247,7 @@ public class ScamReportController(
             
             Console.Write(submitReportViewModel.ReporterName + " " + submitReportViewModel.ReporterEmail);
         }
-        
-        
-        
+
         
         
         ScamReport report = new ScamReport
@@ -221,8 +266,83 @@ public class ScamReportController(
             DynamicData = "{}",
             Status = ReportStatus.Submitted
         };
+
         
-        _scamReportService.AddScamReport(report);
+        
+        var builder = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json");
+        IConfigurationRoot configure = builder.Build();
+        
+        String bucketName = configure["S3BucketName"];
+        
+        List<string> values = getValues();
+        var awsS3client = new AmazonS3Client(values[0], values[1], values[2], RegionEndpoint.USEast1);
+        
+        
+        List<Attachment> attachments = new List<Attachment>();
+        List<ScamReportAttachment> scamReportAttachments = new List<ScamReportAttachment>();
+        
+        foreach(var image in submitReportViewModel.Attachments)
+        {
+            if (image.Length <= 0)
+            {
+                return BadRequest("Empty image");
+            }
+            else if (image.Length > 10485760)
+            {
+                return BadRequest("Your file size is not more than 10 MB.");
+            }
+            else if (image.ContentType.ToLower() != "image/png" && image.ContentType.ToLower() != "image/jpeg"
+                                                                && image.ContentType.ToLower() != "image/gif")
+            {
+                return BadRequest("Image format not valid");
+            }
+            
+            
+            try
+            {
+                String fileName = $"{Guid.NewGuid()}{Path.GetExtension(image.FileName)}";
+                PutObjectRequest uploadRequest = new PutObjectRequest
+                {
+                    InputStream = image.OpenReadStream(),
+                    BucketName = bucketName,
+                    Key = $"images/{fileName}",
+                    CannedACL = S3CannedACL.PublicRead
+                };
+                await awsS3client.PutObjectAsync(uploadRequest);
+                
+                Attachment attachment = new Attachment
+                {
+                    FileName = image.FileName,
+                    ContentType = image.ContentType,
+                    BucketName = bucketName,
+                    Link =  "https://"+ bucketName + ".s3.amazonaws.com/images/"+ fileName,
+                };
+
+                attachments.Add(attachment);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest("Image upload to S3 error: " + ex.Message);
+            }
+            
+        }
+        
+        await _scamReportService.AddScamReport(report);
+        
+        foreach (var attachment in attachments)
+        {
+            await _attachmentService.AddAttachmentAsync(attachment);
+
+            scamReportAttachments.Add(new ScamReportAttachment
+            {
+                ScamReportId = report.Id,
+                AttachmentId = attachment.Id
+            });
+        }
+        
+        await _scamReportAttachmentService.AddScamReportAttachmentRange(scamReportAttachments);
         
         
         TempData["Success"] = "Scam report submitted successfully!";

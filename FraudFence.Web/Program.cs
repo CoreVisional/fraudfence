@@ -64,6 +64,9 @@ builder.Services.AddScoped<ScamReportService>();
 builder.Services.AddScoped<PostService>();
 builder.Services.AddScoped<CommentService>();
 builder.Services.AddScoped<SettingService>();
+builder.Services.AddScoped<AttachmentService>();
+builder.Services.AddScoped<ScamReportAttachmentService>();
+builder.Services.AddScoped<PostAttachmentService>();
 
 builder.Services.AddScoped<ScamCategoryService>();
 builder.Services.AddScoped<ArticleService>();
