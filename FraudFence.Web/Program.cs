@@ -100,6 +100,7 @@ else
 }
 
 app.UseHttpsRedirection();
+app.UseXRay("FraudFence");
 app.UseStaticFiles();
 app.UseRouting();
 
