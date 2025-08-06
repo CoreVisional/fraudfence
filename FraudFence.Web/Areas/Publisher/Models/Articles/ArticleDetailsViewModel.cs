@@ -1,4 +1,4 @@
-﻿using FraudFence.EntityModels.Models;
+﻿using FraudFence.EntityModels.Dto.Article;
 using System.Web;
 
 namespace FraudFence.Web.Areas.Publisher.Models.Articles
@@ -17,14 +17,14 @@ namespace FraudFence.Web.Areas.Publisher.Models.Articles
 
         public DateTime? UpdatedAt { get; }
 
-        public ArticleDetailsViewModel(Article article)
+        public ArticleDetailsViewModel(ArticleDTO dto)
         {
-            Id = article.Id;
-            Title = article.Title;
-            CategoryName = article.ScamCategory.Name;
-            Content = HttpUtility.HtmlDecode(article.Content);
-            CreatedAt = article.CreatedAt;
-            UpdatedAt = article.LastModified;
+            Id = dto.Id;
+            Title = dto.Title;
+            CategoryName = dto.CategoryName;
+            Content = HttpUtility.HtmlDecode(dto.Content);
+            CreatedAt = dto.CreatedAt;
+            UpdatedAt = dto.LastModified;
         }
     }
 }
