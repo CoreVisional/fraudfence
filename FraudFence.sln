@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FraudFence.Function.EmailSe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FraudFence.Function.ArticlesApi", "FraudFence.Function.ArticlesApi\FraudFence.Function.ArticlesApi.csproj", "{030B9717-ACAB-C24E-10BA-8A6AFECD1323}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FraudFence.Function.NewslettersApi", "FraudFence.Function.NewslettersApi\FraudFence.Function.NewslettersApi.csproj", "{AB452BB1-0EAB-AEE9-44A9-7484A816DCE2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -59,6 +61,10 @@ Global
 		{030B9717-ACAB-C24E-10BA-8A6AFECD1323}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{030B9717-ACAB-C24E-10BA-8A6AFECD1323}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{030B9717-ACAB-C24E-10BA-8A6AFECD1323}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AB452BB1-0EAB-AEE9-44A9-7484A816DCE2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AB452BB1-0EAB-AEE9-44A9-7484A816DCE2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AB452BB1-0EAB-AEE9-44A9-7484A816DCE2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AB452BB1-0EAB-AEE9-44A9-7484A816DCE2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -67,6 +73,7 @@ Global
 		{5CE70B5F-62EB-6F85-5D8B-54E18FDC316D} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{369F11CD-63B3-9904-E811-DDDF047CEB5F} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{030B9717-ACAB-C24E-10BA-8A6AFECD1323} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{AB452BB1-0EAB-AEE9-44A9-7484A816DCE2} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {15F273D6-99BC-4B3F-A33E-B21F8ED5C854}

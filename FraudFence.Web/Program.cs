@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Logging;
 using System.Globalization;
-using System.Text.Json;
 
 CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("en-MY");
 CultureInfo.DefaultThreadCurrentUICulture = new CultureInfo("en-MY");
@@ -63,9 +62,9 @@ builder.Services.AddScoped<CommentService>();
 builder.Services.AddScoped<SettingService>();
 builder.Services.AddScoped<ScamCategoryService>();
 builder.Services.AddScoped<ArticleService>();
-builder.Services.AddScoped<NewsletterService>();
 
 builder.Services.AddHttpClient<ArticleApiClient>();
+builder.Services.AddHttpClient<NewsletterApiClient>();
 
 #if DEBUG
 IdentityModelEventSource.ShowPII = true;
