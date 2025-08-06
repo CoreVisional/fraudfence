@@ -1,4 +1,5 @@
-﻿using FraudFence.EntityModels.Models;
+﻿using FraudFence.EntityModels.Dto.Article;
+using FraudFence.EntityModels.Models;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Web;
 
@@ -18,12 +19,12 @@ namespace FraudFence.Web.Areas.Publisher.Models.Articles
 
         public ArticleEditViewModel() { }
 
-        public ArticleEditViewModel(Article article)
+        public ArticleEditViewModel(ArticleDTO dto)
         {
-            Id = article.Id;
-            Title = article.Title;
-            ScamCategoryId = article.ScamCategoryId;
-            Content = HttpUtility.HtmlDecode(article.Content);
+            Id = dto.Id;
+            Title = dto.Title;
+            ScamCategoryId = dto.ScamCategoryId;
+            Content = HttpUtility.HtmlDecode(dto.Content);
         }
     }
 }

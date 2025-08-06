@@ -28,5 +28,12 @@
                 });
             }
         });
+
+        const form = document.getElementById('articleForm');
+        if (form) {
+            form.addEventListener('submit', function () {
+                tinymce.triggerSave();
+            });
+        }
     }
 });
