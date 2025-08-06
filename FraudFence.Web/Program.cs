@@ -4,12 +4,12 @@ using FraudFence.Interface.Common;
 using FraudFence.Service;
 using FraudFence.Service.Common;
 using FraudFence.Web.Infrastructure;
-using Hangfire;
+using FraudFence.Web.Infrastructure.Api;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Logging;
 using System.Globalization;
+using System.Text.Json;
 
 CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("en-MY");
 CultureInfo.DefaultThreadCurrentUICulture = new CultureInfo("en-MY");
@@ -53,9 +53,6 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUserContext, UserContext>();
 builder.Services.AddScoped<AuditInterceptor>();
 builder.Services.AddScoped<IStorageService, StorageService>();
-builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
-builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<EmailSettings>>().Value);
-builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<ScamCategoryService>();
 builder.Services.AddScoped<ExternalAgencyService>();
@@ -64,14 +61,11 @@ builder.Services.AddScoped<ScamReportService>();
 builder.Services.AddScoped<PostService>();
 builder.Services.AddScoped<CommentService>();
 builder.Services.AddScoped<SettingService>();
-
 builder.Services.AddScoped<ScamCategoryService>();
 builder.Services.AddScoped<ArticleService>();
 builder.Services.AddScoped<NewsletterService>();
 
-builder.Services.AddHangfire(cfg => cfg.UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-builder.Services.AddHangfireServer();
+builder.Services.AddHttpClient<ArticleApiClient>();
 
 #if DEBUG
 IdentityModelEventSource.ShowPII = true;

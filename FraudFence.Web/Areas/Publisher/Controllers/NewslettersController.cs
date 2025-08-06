@@ -1,7 +1,6 @@
 ﻿using FraudFence.EntityModels.Models;
 using FraudFence.Service;
 using FraudFence.Web.Areas.Publisher.Models.Newsletters;
-using Hangfire;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -15,13 +14,11 @@ namespace FraudFence.Web.Areas.Publisher.Controllers
     {
         private readonly NewsletterService _newsletterService;
         private readonly ArticleService _articleService;
-        private readonly IBackgroundJobClient _backgroundJobClient;
 
-        public NewslettersController(NewsletterService newsletterService, ArticleService articleService, IBackgroundJobClient backgroundJobClient)
+        public NewslettersController(NewsletterService newsletterService, ArticleService articleService)
         {
             _newsletterService = newsletterService;
             _articleService = articleService;
-            _backgroundJobClient = backgroundJobClient;
         }
 
         [HttpGet]
@@ -97,14 +94,6 @@ namespace FraudFence.Web.Areas.Publisher.Controllers
 
             await _newsletterService.AddAsync(newsletter);
 
-            var jobId = _backgroundJobClient.Schedule(
-                () => _newsletterService.SendNewsletterAsync(newsletter.Id),
-                newsletter.ScheduledAt
-            );
-
-            newsletter.HangfireJobId = jobId;
-            await _newsletterService.UpdateAsync(newsletter);
-
             return RedirectToAction(nameof(Index));
         }
 
@@ -165,7 +154,7 @@ namespace FraudFence.Web.Areas.Publisher.Controllers
                 IntroText = nl.IntroText,
                 ScheduledAt = nl.ScheduledAt,
                 Articles = all,
-                SelectedArticleIds = nl.Articles.Select(a => a.Id).ToList()
+                SelectedArticleIds = [.. nl.Articles.Select(a => a.Id)]
             };
 
             return View(vm);
@@ -201,14 +190,6 @@ namespace FraudFence.Web.Areas.Publisher.Controllers
                 .Where(a => vm.SelectedArticleIds.Contains(a.Id));
             foreach (var art in toAdd) nl.Articles.Add(art);
 
-            await _newsletterService.UpdateAsync(nl);
-
-            var jobId = _backgroundJobClient.Schedule(
-                () => _newsletterService.SendNewsletterAsync(nl.Id),
-                nl.ScheduledAt
-            );
-
-            nl.HangfireJobId = jobId;
             await _newsletterService.UpdateAsync(nl);
 
             TempData["notice"] = "Newsletter updated.";
