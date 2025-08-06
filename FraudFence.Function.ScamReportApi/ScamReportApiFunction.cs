@@ -33,14 +33,82 @@ public class ScamReportApiFunction
     {
         return req.RequestContext.Http.Method switch
         {
-            "GET" when req.RawPath == "/scamReports" => await GetAll(),
-            "GET" => await Get(int.Parse(req.PathParameters["id"])),
-            "POST" when req.RawPath == "/scamReports" => await Create(req.Body),
-            "PUT" => await Update(int.Parse(req.PathParameters["id"]), req.Body),
-            "DELETE" => await Delete(int.Parse(req.PathParameters["id"])),
+            "GET" when req.RawPath.StartsWith("/scamReports/owner/") =>
+                await GetReportsByUserId(int.Parse(req.PathParameters["userId"])),
+
+            "GET" when req.RawPath.StartsWith("/scamReports/") =>
+                await Get(int.Parse(req.PathParameters["id"])),
+
+            "POST" when req.RawPath == "/scamReports" =>
+                await Create(req.Body),
+
             _ => new APIGatewayHttpApiV2ProxyResponse { StatusCode = 405 }
         };
     }
+    
+    
+    private async Task<APIGatewayHttpApiV2ProxyResponse> GetReportsByUserId(int id)
+    {
+        List<ScamReport> scamReports = await _context.ScamReports
+            .Include(r => r.ScamCategory)
+            .Where(r => r.UserId == id)
+            .IgnoreAutoIncludes()
+            .ToListAsync();
+        
+        List<ScamReportDTO> scamReportDTOs = [];
+
+        foreach (ScamReport scamReport in scamReports)
+        {
+            var dto = new ScamReportDTO
+            {
+                ScamCategoryId = scamReport.ScamCategoryId,
+                ExternalAgencyId = scamReport.ExternalAgencyId,
+                GuestId = scamReport.GuestId,
+                UserId = scamReport.UserId,
+                FirstEncounteredOn = scamReport.FirstEncounteredOn,
+                Description = scamReport.Description,
+                ReporterName = scamReport.ReporterName,
+                ReporterEmail = scamReport.ReporterEmail,
+                DynamicData = scamReport.DynamicData,
+            };
+            scamReportDTOs.Add(dto);
+        }
+        
+        
+        return new APIGatewayHttpApiV2ProxyResponse
+        {
+            StatusCode = 200,
+            Body = JsonSerializer.Serialize(scamReportDTOs),
+            Headers = new Dictionary<string, string> { ["Content-Type"] = "application/json" }
+        };
+    }
+    
+    private async Task<APIGatewayHttpApiV2ProxyResponse> Get(int id)
+    {
+        var scamReport = await _context.ScamReports.IgnoreAutoIncludes().Include(sr => sr.User).FirstOrDefaultAsync(sr => sr.Id == id);
+        if (scamReport == null) return new APIGatewayHttpApiV2ProxyResponse { StatusCode = 404 };
+
+        var dto = new ScamReportDTO
+        {
+            ScamCategoryId = scamReport.ScamCategoryId,
+            ExternalAgencyId = scamReport.ExternalAgencyId,
+            GuestId = scamReport.GuestId,
+            UserId = scamReport.UserId,
+            FirstEncounteredOn = scamReport.FirstEncounteredOn,
+            Description = scamReport.Description,
+            ReporterName = scamReport.ReporterName,
+            ReporterEmail = scamReport.ReporterEmail,
+            DynamicData = scamReport.DynamicData,
+        };
+        
+        return new APIGatewayHttpApiV2ProxyResponse
+        {
+            StatusCode = 200,
+            Body = JsonSerializer.Serialize(dto),
+            Headers = new Dictionary<string, string> { ["Content-Type"] = "application/json" }
+        };
+    }
+    
     
     private async Task<APIGatewayHttpApiV2ProxyResponse> Create(string body)
     {
