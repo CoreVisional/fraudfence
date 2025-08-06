@@ -14,6 +14,7 @@ using FraudFence.Service.Common;
 
 //Amazon
 using Amazon;
+using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.Extensions.Configuration;
@@ -38,17 +39,16 @@ public class ScamReportController(
     private List<string> getValues()
     {
         List<string> values = new List<string>();
+
+        var awsCredentials = FallbackCredentialsFactory.GetCredentials();
+        var immutableCreds = awsCredentials.GetCredentials();
+
+        values.Add(immutableCreds.AccessKey ?? "");
+        values.Add(immutableCreds.SecretKey ?? "");
+        values.Add(immutableCreds.Token ?? "");
+
+        return values;    
         
-        var builder = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json");
-        IConfigurationRoot configure = builder.Build();
-        
-        values.Add(configure["AwsAccessKeyId"]);
-        values.Add(configure["AwsSecretAccessKey"]);
-        values.Add(configure["AwsSessionToken"]);
-        
-        return values;
     }
     
 
@@ -275,6 +275,8 @@ public class ScamReportController(
         IConfigurationRoot configure = builder.Build();
         
         String bucketName = configure["S3BucketName"];
+        
+        
         
         List<string> values = getValues();
         var awsS3client = new AmazonS3Client(values[0], values[1], values[2], RegionEndpoint.USEast1);
