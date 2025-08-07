@@ -11,7 +11,7 @@ namespace FraudFence.Web.Extensions
 
         public static string GetEmail(this ClaimsPrincipal user)
         {
-            return user.FindFirst("email")!.Value;
+            return user.FindFirst("email")?.Value ?? string.Empty;
         }
     }
 }

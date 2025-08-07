@@ -19,7 +19,6 @@ public class UsersApiFunction
     public UsersApiFunction()
     {
         _cognitoClient = new AmazonCognitoIdentityProviderClient();
-        // In a real application, use a more robust configuration management system.
         var config = JsonSerializer.Deserialize<JsonElement>(File.ReadAllText("appsettings.json"));
         _userPoolId = config.GetProperty("AWS").GetProperty("Cognito").GetProperty("UserPoolId").GetString()!;
         _appClientId = config.GetProperty("AWS").GetProperty("Cognito").GetProperty("AppClientId").GetString()!;

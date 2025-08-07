@@ -3,7 +3,6 @@ using FraudFence.EntityModels.Models;
 using FraudFence.Service;
 using FraudFence.Web.Areas.Consumer.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -11,7 +10,7 @@ using System.Security.Claims;
 namespace FraudFence.Web.Areas.Consumer.Controllers;
 
 [Area("Consumer")]
-[Authorize(Roles = "Consumer")]
+[Authorize]
 public class ManagePreferenceController(SettingService settingService, ScamCategoryService scamCategoryService) : Controller
 {
     [HttpPost]

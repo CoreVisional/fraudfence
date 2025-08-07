@@ -3,6 +3,7 @@ using FraudFence.Web.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http;
@@ -13,6 +14,7 @@ using System.Threading.Tasks;
 
 namespace FraudFence.Web.Controllers
 {
+    [Authorize]
     public class AccountsController : Controller
     {
         private readonly HttpClient _httpClient;
@@ -25,18 +27,21 @@ namespace FraudFence.Web.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult Register()
         {
             return View();
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult Login()
         {
             return View();
         }
 
         [HttpPost]
+        [AllowAnonymous]
         public async Task<IActionResult> Register([FromForm] RegistrationViewModel vm)
         {
             if (!ModelState.IsValid) return View(vm);
@@ -55,6 +60,7 @@ namespace FraudFence.Web.Controllers
         }
 
         [HttpPost]
+        [AllowAnonymous]
         public async Task<IActionResult> Login([FromForm] LoginViewModel vm)
         {
             if (!ModelState.IsValid) return View(vm);
@@ -83,7 +89,12 @@ namespace FraudFence.Web.Controllers
             var jsonToken = handler.ReadToken(idToken) as JwtSecurityToken;
 
             var claims = new List<Claim>(jsonToken!.Claims);
-            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme, ClaimTypes.Email, "cognito:groups");
+            var subClaim = claims.FirstOrDefault(c => c.Type == "sub");
+            if (subClaim != null)
+            {
+                claims.Add(new Claim(ClaimTypes.NameIdentifier, subClaim.Value));
+            }
+            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme, ClaimTypes.Name, "cognito:groups");
             var authProperties = new AuthenticationProperties
             {
                 IsPersistent = false
