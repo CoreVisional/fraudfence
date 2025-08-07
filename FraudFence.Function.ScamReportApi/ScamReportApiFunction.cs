@@ -31,6 +31,8 @@ public class ScamReportApiFunction
     
     public async Task<APIGatewayHttpApiV2ProxyResponse> FunctionHandler(APIGatewayHttpApiV2ProxyRequest req)
     {
+        
+        
         return req.RequestContext.Http.Method switch
         {
             "GET" when req.RawPath.StartsWith("/scamReports/owner/") =>
@@ -61,6 +63,7 @@ public class ScamReportApiFunction
         {
             var dto = new ScamReportDTO
             {
+                Id = scamReport.Id,
                 ScamCategoryId = scamReport.ScamCategoryId,
                 ExternalAgencyId = scamReport.ExternalAgencyId,
                 GuestId = scamReport.GuestId,
@@ -69,7 +72,13 @@ public class ScamReportApiFunction
                 Description = scamReport.Description,
                 ReporterName = scamReport.ReporterName,
                 ReporterEmail = scamReport.ReporterEmail,
+                Status = scamReport.Status,
                 DynamicData = scamReport.DynamicData,
+                ScamCategory = new ScamCategoryDTO
+                {
+                    Id = scamReport.ScamCategory.Id,
+                    Name = scamReport.ScamCategory.Name,
+                }
             };
             scamReportDTOs.Add(dto);
         }
@@ -134,11 +143,27 @@ public class ScamReportApiFunction
         _context.ScamReports.Add(scamReport);
         
         await _context.SaveChangesAsync();
+        
+        var returnDto = new ScamReportDTO
+        {
+            Id = scamReport.Id,
+            ScamCategoryId = scamReport.ScamCategoryId,
+            ExternalAgencyId = scamReport.ExternalAgencyId,
+            GuestId = scamReport.GuestId,
+            UserId = scamReport.UserId,
+            FirstEncounteredOn = scamReport.FirstEncounteredOn,
+            Description = scamReport.Description,
+            ReporterName = scamReport.ReporterName,
+            ReporterEmail = scamReport.ReporterEmail,
+            DynamicData = scamReport.DynamicData,
+        };
+        
 
         return new APIGatewayHttpApiV2ProxyResponse
         {
             StatusCode = 201,
-            Headers = new Dictionary<string, string> { ["Location"] = $"/scamReports/{scamReport.ScamCategoryId}" }
+            Body = JsonSerializer.Serialize(returnDto),
+            Headers = new Dictionary<string, string> { ["Content-Type"] = "application/json" }
         };
     }
     

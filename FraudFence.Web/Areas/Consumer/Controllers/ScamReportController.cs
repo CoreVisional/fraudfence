@@ -19,6 +19,8 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.Extensions.Configuration;
 using System.IO;
+using FraudFence.EntityModels.Dto.ScamReport;
+using FraudFence.Web.Infrastructure.Api;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
@@ -27,7 +29,7 @@ namespace FraudFence.Web.Areas.Consumer.Controllers;
 [Area("Consumer")]
 public class ScamReportController(
     UserManager<ApplicationUser> userManager,
-    ScamReportService _scamReportService,
+    ScamReportApiClient _scamReportApiClient,
     ScamCategoryService _scamCategoryService,
     ExternalAgencyService _externalAgencyService,
     AttachmentService _attachmentService,
@@ -60,7 +62,7 @@ public class ScamReportController(
         
         var currentUser = await userManager.GetUserAsync(User);
 
-        ScamReport? scamReport = await _scamReportService.GetScamReport(scamReportId);
+        ScamReportDTO? scamReport = await _scamReportApiClient.GetAsync(scamReportId);
 
         if (scamReport == null)
         {
@@ -156,7 +158,12 @@ public class ScamReportController(
         
         var currentUser = await userManager.GetUserAsync(User);
 
-        var reports = await _scamReportService.GetScamReportsWithUserId(currentUser!.Id);
+        var reports = await _scamReportApiClient.GetReportsByUserIdAsync(currentUser!.Id);
+
+        if (reports == null)
+        {
+            return NotFound("Server unreachable");
+        }
 
         var viewModel = reports.Select(r => new ViewAllReportViewModel
         {
@@ -249,8 +256,7 @@ public class ScamReportController(
         }
 
         
-        
-        ScamReport report = new ScamReport
+        CreateScamReportDTO scamReportDto = new CreateScamReportDTO
         {
             ScamCategoryId = submitReportViewModel.ScamCategoryId,
             ExternalAgencyId = submitReportViewModel.ExternalAgencyId,
@@ -259,8 +265,6 @@ public class ScamReportController(
             ReporterName = submitReportViewModel.ReporterName,
             ReporterEmail = submitReportViewModel.ReporterEmail,
             UserId = currentUser.Id,
-            CreatedAt = DateTime.Now,
-            LastModified = DateTime.Now,
             CreatedBy = User.Identity?.IsAuthenticated == true ? currentUser.Id : null,
             ModifiedBy = User.Identity?.IsAuthenticated == true ? currentUser.Id : null,
             DynamicData = "{}",
@@ -330,8 +334,15 @@ public class ScamReportController(
             }
             
         }
+
         
-        await _scamReportService.AddScamReport(report);
+        
+        ScamReportDTO? returnDto = await _scamReportApiClient.CreateAsync(scamReportDto);
+
+        if (returnDto == null)
+        {
+            return BadRequest("Unable to create the scam report");
+        }
         
         foreach (var attachment in attachments)
         {
@@ -339,7 +350,7 @@ public class ScamReportController(
 
             scamReportAttachments.Add(new ScamReportAttachment
             {
-                ScamReportId = report.Id,
+                ScamReportId = returnDto.Id,
                 AttachmentId = attachment.Id
             });
         }

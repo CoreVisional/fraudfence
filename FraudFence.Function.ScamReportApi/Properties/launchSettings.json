@@ -6,7 +6,7 @@
       "workingDirectory": ".\\bin\\$(Configuration)\\net8.0",
       "executablePath": "%USERPROFILE%\\.dotnet\\tools\\dotnet-lambda-test-tool-8.0.exe",
       "environmentVariables": {
-        "ConnectionString": "Server=localhost,1435;Database=fraudfence;User Id=sa;Password=Passw0rd;TrustServerCertificate=True;MultipleActiveResultSets=True;"
+        "ConnectionString": "Server=fraudfence-db.czjeqyw1icfl.us-east-1.rds.amazonaws.com;Database=fraudfence;User Id=admin;Password=-aW4lMPz-2ZCemD6YVg!9<rsPfdB;TrustServerCertificate=True;MultipleActiveResultSets=True;"
       }
     }
   }

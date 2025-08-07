@@ -1,7 +1,13 @@
+using FraudFence.EntityModels.Enums;
+using FraudFence.EntityModels.Models;
+
 namespace FraudFence.EntityModels.Dto.ScamReport;
 
 public class ScamReportDTO
 {
+    public int Id { get; set; }
+    
+    public ScamCategoryDTO ScamCategory { get; set; }
     public int ScamCategoryId { get; set; }
 
     public int? ExternalAgencyId { get; set; }
@@ -9,6 +15,8 @@ public class ScamReportDTO
     public string? GuestId { get; set; }
         
     public int? UserId { get; set; }
+    
+    public ReportStatus Status { get; set; }
         
     public DateTime FirstEncounteredOn { get; set; }
 

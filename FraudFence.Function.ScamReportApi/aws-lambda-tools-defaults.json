@@ -12,5 +12,6 @@
   "function-runtime": "dotnet8",
   "function-memory-size": 512,
   "function-timeout": 30,
-  "function-handler": "FraudFence.Function.ScamReportApi::FraudFence.Function.ScamReportApi.ScamReportApiFunction::FunctionHandler"
+  "function-handler": "FraudFence.Function.ScamReportApi::FraudFence.Function.ScamReportApi.ScamReportApiFunction::FunctionHandler",
+  "environment-variables"    : "\"ConnectionString\"=\"Server=fraudfence-db.czjeqyw1icfl.us-east-1.rds.amazonaws.com;Database=fraudfence;User Id=admin;Password=-aW4lMPz-2ZCemD6YVg!9<rsPfdB;TrustServerCertificate=True;MultipleActiveResultSets=True;\""
 }

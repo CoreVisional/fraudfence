@@ -70,6 +70,7 @@ builder.Services.AddScoped<ArticleService>();
 builder.Services.AddScoped<NewsletterService>();
 
 builder.Services.AddHttpClient<ArticleApiClient>();
+builder.Services.AddHttpClient<ScamReportApiClient>();
 
 #if DEBUG
 IdentityModelEventSource.ShowPII = true;
