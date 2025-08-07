@@ -47,9 +47,8 @@ public class ScamReportController(
     
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Post(int id)
+    public async Task<IActionResult> Post(int scamReportId)
     {
-        int scamReportId = id;
         
         var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(currentUserId)) return Unauthorized();

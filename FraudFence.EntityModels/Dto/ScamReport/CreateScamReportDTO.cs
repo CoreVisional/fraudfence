@@ -10,10 +10,10 @@ public class CreateScamReportDTO
     public string Description { get; set; } = string.Empty;
     public string ReporterName { get; set; } = string.Empty;
     public string ReporterEmail { get; set; } = string.Empty;
-    public int? UserId { get; set; }
+    public string? UserId { get; set; }
 
-    public int? CreatedBy { get; set; }
-    public int? ModifiedBy { get; set; }
+    public string? CreatedBy { get; set; }
+    public string? ModifiedBy { get; set; }
 
     public string DynamicData { get; set; } = "{}";
 

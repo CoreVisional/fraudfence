@@ -20,7 +20,7 @@ namespace FraudFence.Web.Infrastructure.Api
             return response!;
         }
 
-        public async Task<List<ScamReportDTO>> GetReportsByUserIdAsync(int userId)
+        public async Task<List<ScamReportDTO>> GetReportsByUserIdAsync(string userId)
         {
             var response = await _httpClient.GetFromJsonAsync<List<ScamReportDTO>>(
                 $"{_baseUrl}/scamReports/owner/{userId}"

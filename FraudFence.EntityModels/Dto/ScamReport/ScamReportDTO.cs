@@ -14,7 +14,7 @@ public class ScamReportDTO
 
     public string? GuestId { get; set; }
         
-    public int? UserId { get; set; }
+    public string? UserId { get; set; }
     
     public ReportStatus Status { get; set; }
         

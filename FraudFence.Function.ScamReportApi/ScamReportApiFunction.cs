@@ -36,7 +36,7 @@ public class ScamReportApiFunction
         return req.RequestContext.Http.Method switch
         {
             "GET" when req.RawPath.StartsWith("/scamReports/owner/") =>
-                await GetReportsByUserId(int.Parse(req.PathParameters["userId"])),
+                await GetReportsByUserId(req.PathParameters["userId"]),
 
             "GET" when req.RawPath.StartsWith("/scamReports/") =>
                 await Get(int.Parse(req.PathParameters["id"])),
@@ -49,7 +49,7 @@ public class ScamReportApiFunction
     }
     
     
-    private async Task<APIGatewayHttpApiV2ProxyResponse> GetReportsByUserId(int id)
+    private async Task<APIGatewayHttpApiV2ProxyResponse> GetReportsByUserId(string id)
     {
         List<ScamReport> scamReports = await _context.ScamReports
             .Include(r => r.ScamCategory)
