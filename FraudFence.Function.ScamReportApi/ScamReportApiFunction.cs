@@ -108,6 +108,7 @@ public class ScamReportApiFunction
             ReporterName = scamReport.ReporterName,
             ReporterEmail = scamReport.ReporterEmail,
             DynamicData = scamReport.DynamicData,
+            Status = scamReport.Status
         };
         
         return new APIGatewayHttpApiV2ProxyResponse
