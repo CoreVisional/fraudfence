@@ -1,7 +1,6 @@
 ﻿using FraudFence.Data;
 using FraudFence.EntityModels.Models;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace FraudFence.Web.Infrastructure
