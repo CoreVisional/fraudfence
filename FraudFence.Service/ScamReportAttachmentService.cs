@@ -26,6 +26,7 @@ public class ScamReportAttachmentService : BaseService<ScamReportAttachment>
     {
         return await _context.ScamReportAttachments
             .Where(p => p.ScamReportId == scamReportId)
+            .Include(p => p.Attachment)
             .IgnoreAutoIncludes()
             .ToListAsync();
     }

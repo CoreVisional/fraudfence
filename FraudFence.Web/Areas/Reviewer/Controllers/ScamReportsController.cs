@@ -12,6 +12,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic; // Added for List
 using FraudFence.Interface.Common;
+using FraudFence.Service;
 
 namespace FraudFence.Web.Areas.Reviewer.Controllers
 {
@@ -22,12 +23,14 @@ namespace FraudFence.Web.Areas.Reviewer.Controllers
         private readonly IReviewerService _reviewerService;
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ScamReportAttachmentService _scamReportAttachmentService;
 
-        public ScamReportsController(IReviewerService reviewerService, ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public ScamReportsController(ScamReportAttachmentService scamReportAttachmentService,IReviewerService reviewerService, ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
             _reviewerService = reviewerService;
             _context = context;
             _userManager = userManager;
+            _scamReportAttachmentService = scamReportAttachmentService;
         }
 
         public async Task<IActionResult> Index(string status)
@@ -74,6 +77,18 @@ namespace FraudFence.Web.Areas.Reviewer.Controllers
                         Text = u.Name
                     }).ToListAsync();
             }
+
+            List<ScamReportAttachment> scamReportAttachments = await
+                _scamReportAttachmentService.GetScamReportAttachmentByScamReportId(id);
+            
+
+            List<String> imageLinks = [];
+            
+            foreach (ScamReportAttachment sra in scamReportAttachments)
+            {
+                imageLinks.Add(sra.Attachment.Link);
+            }
+            
             var viewModel = new ScamReportDetailsViewModel
             {
                 Id = report.Id,
@@ -89,7 +104,8 @@ namespace FraudFence.Web.Areas.Reviewer.Controllers
                 Agencies = agencies,
                 SelectedReviewerIds = report.Reviewers.Select(u => u.Id).ToList(),
                 AllReviewers = allReviewers,
-                FirstEncounteredOn = report.FirstEncounteredOn
+                FirstEncounteredOn = report.FirstEncounteredOn,
+                ScamReportAttachmentLinks = imageLinks
             };
             return View(viewModel);
         }
