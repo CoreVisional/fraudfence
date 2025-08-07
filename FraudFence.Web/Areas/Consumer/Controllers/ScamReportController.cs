@@ -283,7 +283,7 @@ public class ScamReportController(
         
         
         List<string> values = getValues();
-        var awsS3client = new AmazonS3Client(values[0], values[1], values[2], RegionEndpoint.USEast1);
+        var awsS3client =  new AmazonS3Client(values[0], values[1],  RegionEndpoint.USEast1); // new AmazonS3Client(values[0], values[1], values[2], RegionEndpoint.USEast1);
         
         
         List<Attachment> attachments = new List<Attachment>();
