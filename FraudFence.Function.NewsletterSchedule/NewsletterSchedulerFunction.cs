@@ -26,7 +26,7 @@ public class NewsletterSchedulerFunction
 
         _context = new ApplicationDbContext(options);
         _amazonSQSClient = new AmazonSQSClient();
-        _queueUrl = "https://sqs.us-east-1.amazonaws.com/211125322860/newsletter-email-queue";
+        _queueUrl = "https://sqs.us-east-1.amazonaws.com/438883593337/newsletter-email-queue";
     }
 
     public async Task<string> FunctionHandler()
