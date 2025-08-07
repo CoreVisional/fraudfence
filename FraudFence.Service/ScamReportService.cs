@@ -3,6 +3,7 @@ using FraudFence.EntityModels.Models;
 using FraudFence.Service.Common;
 using Microsoft.EntityFrameworkCore;
 
+
 namespace FraudFence.Service;
 
 public class ScamReportService : BaseService<ScamReport>
@@ -10,7 +11,7 @@ public class ScamReportService : BaseService<ScamReport>
     public ScamReportService(ApplicationDbContext context) : base(context)
     {
     }
-
+    
     public override async Task UpdateAsync(ScamReport entity)
     {
         var inDb = await _context.ScamReports.FindAsync(entity.Id);
@@ -30,10 +31,10 @@ public class ScamReportService : BaseService<ScamReport>
         await _context.SaveChangesAsync();
     }
 
-    public void AddScamReport(ScamReport entity)
+    public async Task AddScamReport(ScamReport entity)
     {
         _context.ScamReports.Add(entity);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
     }
 
     public async Task<List<ScamReport>> GetScamReportsWithUserId(string userId)

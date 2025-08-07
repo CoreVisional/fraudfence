@@ -5,13 +5,12 @@ using FraudFence.EntityModels.Models;
 using FraudFence.Web.Areas.Reviewer.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Collections.Generic; // Added for List
+using System.Collections.Generic;
 using FraudFence.Interface.Common;
+using FraudFence.Service;
 
 namespace FraudFence.Web.Areas.Reviewer.Controllers
 {
@@ -21,10 +20,15 @@ namespace FraudFence.Web.Areas.Reviewer.Controllers
     {
         private readonly IReviewerService _reviewerService;
         private readonly ApplicationDbContext _context;
-        public ScamReportsController(IReviewerService reviewerService, ApplicationDbContext context)
+        private readonly ScamReportAttachmentService _scamReportAttachmentService;
+        private readonly UserService _userService;
+
+        public ScamReportsController(ScamReportAttachmentService scamReportAttachmentService,IReviewerService reviewerService, ApplicationDbContext context, UserService userService)
         {
             _reviewerService = reviewerService;
             _context = context;
+            _scamReportAttachmentService = scamReportAttachmentService;
+            _userService = userService;
         }
 
         public async Task<IActionResult> Index(string status)
@@ -57,8 +61,25 @@ namespace FraudFence.Web.Areas.Reviewer.Controllers
                     Value = a.Id.ToString(),
                     Text = a.Name
                 }).ToListAsync();
-            // Get all users with Reviewer role - This will be re-implemented later
-            var allReviewers = new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
+            
+            var allUsers = await _userService.GetUsersAsync();
+            var allReviewers = allUsers
+                .Where(u => u.Roles.Contains("Reviewer"))
+                .Select(u => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+                {
+                    Value = u.Id.ToString(),
+                    Text = u.Name
+                }).ToList();
+
+            List<ScamReportAttachment> scamReportAttachments = await
+                _scamReportAttachmentService.GetScamReportAttachmentByScamReportId(id);
+            
+            List<string> imageLinks = new();
+            
+            foreach (ScamReportAttachment sra in scamReportAttachments)
+            {
+                imageLinks.Add(sra.Attachment.Link);
+            }
             
             var viewModel = new ScamReportDetailsViewModel
             {
@@ -75,7 +96,8 @@ namespace FraudFence.Web.Areas.Reviewer.Controllers
                 Agencies = agencies,
                 SelectedReviewerIds = report.Reviewers.Select(u => u.Id).ToList(),
                 AllReviewers = allReviewers,
-                FirstEncounteredOn = report.FirstEncounteredOn
+                FirstEncounteredOn = report.FirstEncounteredOn,
+                ScamReportAttachmentLinks = imageLinks
             };
             return View(viewModel);
         }
@@ -100,6 +122,5 @@ namespace FraudFence.Web.Areas.Reviewer.Controllers
             );
             return RedirectToAction("Index");
         }
-
     }
 }

@@ -18,10 +18,10 @@
     "function-name"         : "NewsletterSchedulerFunction",
     "function-description"  : "",
     "package-type"          : "Zip",
-    "function-role"         : "arn:aws:iam::211125322860:role/LabRole",
-    "function-subnets"      : "subnet-02720cfdeaea9d60e,subnet-04742a1896e03ae6b",
-    "function-security-groups" : "sg-094b59130f390ebde",
-    "tracing-mode"             : "PassThrough",
-    "environment-variables"    : "\"ConnectionString\"=\"Server=fraudfence-dev.cvco02cckwty.us-east-1.rds.amazonaws.com,1433;Database=fraudfence;User Id=admin;Password=fraudfenceadmin;TrustServerCertificate=True;MultipleActiveResultSets=True;\"",
+    "function-role"         : "arn:aws:iam::438883593337:role/Superman",
+    "function-subnets"      : "subnet-0ad2f088703e23e0a,subnet-0894d6980366a04b9",
+    "function-security-groups" : "sg-0f6d6f6430f9e3220",
+    "tracing-mode"             : "Active",
+    "environment-variables"    : "\"AWS_LAMBDA_EXEC_WRAPPER\"=\"/opt/otel-instrument\";\"ConnectionString\"=\"Server=fraudfence.cmfgw48wi6eo.us-east-1.rds.amazonaws.com,1433;Database=fraudfence;User Id=admin;Password=fraudfenceadmin;TrustServerCertificate=True;MultipleActiveResultSets=True;\"",
     "image-tag"                : ""
 }

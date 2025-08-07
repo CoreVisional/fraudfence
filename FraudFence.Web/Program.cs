@@ -7,6 +7,7 @@ using FraudFence.Web.Infrastructure.Api;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
+using Microsoft.IdentityModel.Logging;
 
 CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("en-MY");
 CultureInfo.DefaultThreadCurrentUICulture = new CultureInfo("en-MY");
@@ -54,11 +55,19 @@ builder.Services.AddScoped<ScamReportService>();
 builder.Services.AddScoped<PostService>();
 builder.Services.AddScoped<CommentService>();
 builder.Services.AddScoped<SettingService>();
+builder.Services.AddScoped<AttachmentService>();
+builder.Services.AddScoped<ScamReportAttachmentService>();
+builder.Services.AddScoped<PostAttachmentService>();
 builder.Services.AddScoped<ArticleService>();
-builder.Services.AddScoped<NewsletterService>();
 
 builder.Services.AddHttpClient<ArticleApiClient>();
 builder.Services.AddHttpClient("UsersApi");
+builder.Services.AddHttpClient<ScamReportApiClient>();
+builder.Services.AddHttpClient<NewsletterApiClient>();
+
+#if DEBUG
+IdentityModelEventSource.ShowPII = true;
+#endif
 
 var app = builder.Build();
 

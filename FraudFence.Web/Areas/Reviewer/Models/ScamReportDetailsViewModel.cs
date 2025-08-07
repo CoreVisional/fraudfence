@@ -21,5 +21,7 @@ namespace FraudFence.Web.Areas.Reviewer.Models
         public List<string> SelectedReviewerIds { get; set; } = new();
         public List<SelectListItem> AllReviewers { get; set; } = new();
         public DateTime FirstEncounteredOn { get; set; }
+        
+        public List<String> ScamReportAttachmentLinks { get; set; } = [];
     }
 } 

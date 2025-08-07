@@ -23,6 +23,7 @@ namespace FraudFence.Service.Common
                 .IgnoreAutoIncludes()
                 .Include(r => r.Reviewers)
                 .Include(r => r.ExternalAgency)
+                .Include(r => r.ScamReportAttachments)
                 .Where(r =>
                     r.Status != EntityModels.Enums.ReportStatus.Draft &&
                     r.Status != EntityModels.Enums.ReportStatus.Withdrawn &&
