@@ -1,8 +1,9 @@
-﻿using FraudFence.Service;
-using FraudFence.Web.Areas.Publisher.Models;
+﻿using FraudFence.Web.Areas.Publisher.Models;
 using FraudFence.Web.Areas.Publisher.Models.Newsletters;
+using FraudFence.Web.Infrastructure.Api;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace FraudFence.Web.Areas.Publisher.Controllers
 {
@@ -10,38 +11,41 @@ namespace FraudFence.Web.Areas.Publisher.Controllers
     [Authorize(Roles = "Publisher")]
     public class HomeController : Controller
     {
-        private readonly ArticleService _articleService;
-        private readonly NewsletterService _newsletterService;
+        private readonly ArticleApiClient _articleApiClient;
+        private readonly NewsletterApiClient _newsletterApiClient;
 
-        public HomeController(ArticleService articleService, NewsletterService newsletterService)
+        public HomeController(ArticleApiClient articleApiClient, NewsletterApiClient newsletterApiClient)
         {
-            _articleService = articleService;
-            _newsletterService = newsletterService;
+            _articleApiClient = articleApiClient;
+            _newsletterApiClient = newsletterApiClient;
         }
 
         [HttpGet]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var allArticles = _articleService.GetAll();
-            var totalArticles = allArticles.Count();
+            var allArticles = await _articleApiClient.GetAllAsync();
+            var totalArticles = allArticles.Count;
 
-            var scheduledArticleIds = _newsletterService.GetAll()
-                .SelectMany(n => n.Articles.Select(a => a.Id))
-                .Distinct()
+            var allNewsletters = await _newsletterApiClient.GetAllAsync();
+
+            var fullNewsletters = await Task.WhenAll(
+                allNewsletters.Select(n => _newsletterApiClient.GetWithArticlesAsync(n.Id)));
+
+            var scheduledArticleIds = fullNewsletters
+                .Where(n => n != null)
+                .SelectMany(n => n!.Articles.Select(a => a.Id))
                 .ToHashSet();
-            var draftArticles = allArticles.Count(a => !scheduledArticleIds.Contains(a.Id));
 
-            var pendingNewsletters = _newsletterService.GetAll()
-                .Count(n => n.SentAt == null);
+            var draftArticles = allArticles.Count(a => !scheduledArticleIds.Contains(a.Id));
+            var pendingNewsletters = allNewsletters.Count(n => n.SentAt == null);
 
             var now = DateTime.Now;
-            var sentThisMonth = _newsletterService.GetAll()
-                .Count(n => n.SentAt.HasValue
-                            && n.SentAt.Value.Year == now.Year
-                            && n.SentAt.Value.Month == now.Month);
+            var sentThisMonth = allNewsletters.Count(n =>
+                                  n.SentAt is { } sent &&
+                                  sent.Year == now.Year &&
+                                  sent.Month == now.Month);
 
-            var upcoming = _newsletterService
-                .GetAll()
+            var upcoming = allNewsletters
                 .Where(n => n.SentAt == null)
                 .OrderBy(n => n.ScheduledAt)
                 .Select(n => new NewsletterIndexViewModel
