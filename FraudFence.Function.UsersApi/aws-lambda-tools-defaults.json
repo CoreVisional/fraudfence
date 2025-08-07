@@ -1,14 +1,14 @@
 
 {
     "region" : "us-east-1",
-    "profile" : "default",
+    "profile" : "Max",
     "configuration" : "Release",
     "framework"     : "net8.0",
     "function-name" : "FraudFenceUsersApiFunction",
     "package-type"  : "Zip",
     "function-handler" : "FraudFence.Function.UsersApi::FraudFence.Function.UsersApi.UsersApiFunction::FunctionHandler",
     "function-memory-size" : 256,
-    "function-role"        : "arn:aws:iam::583951545218:role/LabRole",
+    "function-role"        : "arn:aws:iam::438883593337:role/Superman",
     "function-timeout"     : 10,
     "function-runtime"     : "dotnet8",
     "function-architecture" : "x86_64",
