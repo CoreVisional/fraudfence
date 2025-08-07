@@ -11,18 +11,47 @@ using System.Text.Json;
 using FraudFence.Service;
 using FraudFence.Service.Common;
 
+
+//Amazon
+using Amazon;
+using Amazon.Runtime;
+using Amazon.S3;
+using Amazon.S3.Model;
+using Microsoft.Extensions.Configuration;
+using System.IO;
+using FraudFence.EntityModels.Dto.ScamReport;
+using FraudFence.Web.Infrastructure.Api;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
+
 namespace FraudFence.Web.Areas.Consumer.Controllers;
 
 [Area("Consumer")]
 public class ScamReportController(
     UserManager<ApplicationUser> userManager,
-    ScamReportService _scamReportService,
+    ScamReportApiClient _scamReportApiClient,
     ScamCategoryService _scamCategoryService,
     ExternalAgencyService _externalAgencyService,
+    AttachmentService _attachmentService,
+    ScamReportAttachmentService _scamReportAttachmentService,
+    PostAttachmentService _postAttachmentService,
     PostService _postService) : Controller
 {
     
-    
+    private List<string> getValues()
+    {
+        List<string> values = new List<string>();
+
+        var awsCredentials = FallbackCredentialsFactory.GetCredentials();
+        var immutableCreds = awsCredentials.GetCredentials();
+
+        values.Add(immutableCreds.AccessKey ?? "");
+        values.Add(immutableCreds.SecretKey ?? "");
+        values.Add(immutableCreds.Token ?? "");
+
+        return values;    
+        
+    }
     
 
     [HttpPost]
@@ -33,7 +62,7 @@ public class ScamReportController(
         
         var currentUser = await userManager.GetUserAsync(User);
 
-        ScamReport? scamReport = await _scamReportService.GetScamReport(scamReportId);
+        ScamReportDTO? scamReport = await _scamReportApiClient.GetAsync(scamReportId);
 
         if (scamReport == null)
         {
@@ -69,6 +98,26 @@ public class ScamReportController(
         };
         
         _postService.AddPost(post);
+
+        List<ScamReportAttachment> scamReportAttachments =
+            await _scamReportAttachmentService.GetScamReportAttachmentByScamReportId(scamReportId);
+        
+        
+        foreach (ScamReportAttachment scamReportAttachment in scamReportAttachments)
+        {
+            PostAttachment postAttachment = new PostAttachment
+            {
+                PostId = post.Id,
+                AttachmentId = scamReportAttachment.AttachmentId,
+                CreatedBy = currentUser.Id,
+                ModifiedBy = currentUser.Id,
+                LastModified = DateTime.Now
+            };
+
+            await _postAttachmentService.AddPostAttachmentAsync(postAttachment);
+        }
+        
+        
         
         TempData["SuccessMessage"] = "Post request sent successfully.";
 
@@ -109,7 +158,12 @@ public class ScamReportController(
         
         var currentUser = await userManager.GetUserAsync(User);
 
-        var reports = await _scamReportService.GetScamReportsWithUserId(currentUser!.Id);
+        var reports = await _scamReportApiClient.GetReportsByUserIdAsync(currentUser!.Id);
+
+        if (reports == null)
+        {
+            return NotFound("Server unreachable");
+        }
 
         var viewModel = reports.Select(r => new ViewAllReportViewModel
         {
@@ -200,12 +254,9 @@ public class ScamReportController(
             
             Console.Write(submitReportViewModel.ReporterName + " " + submitReportViewModel.ReporterEmail);
         }
+
         
-        
-        
-        
-        
-        ScamReport report = new ScamReport
+        CreateScamReportDTO scamReportDto = new CreateScamReportDTO
         {
             ScamCategoryId = submitReportViewModel.ScamCategoryId,
             ExternalAgencyId = submitReportViewModel.ExternalAgencyId,
@@ -214,15 +265,97 @@ public class ScamReportController(
             ReporterName = submitReportViewModel.ReporterName,
             ReporterEmail = submitReportViewModel.ReporterEmail,
             UserId = currentUser.Id,
-            CreatedAt = DateTime.Now,
-            LastModified = DateTime.Now,
             CreatedBy = User.Identity?.IsAuthenticated == true ? currentUser.Id : null,
             ModifiedBy = User.Identity?.IsAuthenticated == true ? currentUser.Id : null,
             DynamicData = "{}",
             Status = ReportStatus.Submitted
         };
+
         
-        _scamReportService.AddScamReport(report);
+        
+        var builder = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json");
+        IConfigurationRoot configure = builder.Build();
+        
+        String bucketName = configure["S3BucketName"];
+        
+        
+        
+        List<string> values = getValues();
+        var awsS3client =  new AmazonS3Client(values[0], values[1],  RegionEndpoint.USEast1); // new AmazonS3Client(values[0], values[1], values[2], RegionEndpoint.USEast1);
+        
+        
+        List<Attachment> attachments = new List<Attachment>();
+        List<ScamReportAttachment> scamReportAttachments = new List<ScamReportAttachment>();
+        
+        foreach(var image in submitReportViewModel.Attachments)
+        {
+            if (image.Length <= 0)
+            {
+                return BadRequest("Empty image");
+            }
+            else if (image.Length > 10485760)
+            {
+                return BadRequest("Your file size is not more than 10 MB.");
+            }
+            else if (image.ContentType.ToLower() != "image/png" && image.ContentType.ToLower() != "image/jpeg"
+                                                                && image.ContentType.ToLower() != "image/gif")
+            {
+                return BadRequest("Image format not valid");
+            }
+            
+            
+            try
+            {
+                String fileName = $"{Guid.NewGuid()}{Path.GetExtension(image.FileName)}";
+                PutObjectRequest uploadRequest = new PutObjectRequest
+                {
+                    InputStream = image.OpenReadStream(),
+                    BucketName = bucketName,
+                    Key = $"images/{fileName}",
+                    CannedACL = S3CannedACL.PublicRead
+                };
+                await awsS3client.PutObjectAsync(uploadRequest);
+                
+                Attachment attachment = new Attachment
+                {
+                    FileName = image.FileName,
+                    ContentType = image.ContentType,
+                    BucketName = bucketName,
+                    Link =  "https://"+ bucketName + ".s3.amazonaws.com/images/"+ fileName,
+                };
+
+                attachments.Add(attachment);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest("Image upload to S3 error: " + ex.Message);
+            }
+            
+        }
+
+        
+        
+        ScamReportDTO? returnDto = await _scamReportApiClient.CreateAsync(scamReportDto);
+
+        if (returnDto == null)
+        {
+            return BadRequest("Unable to create the scam report");
+        }
+        
+        foreach (var attachment in attachments)
+        {
+            await _attachmentService.AddAttachmentAsync(attachment);
+
+            scamReportAttachments.Add(new ScamReportAttachment
+            {
+                ScamReportId = returnDto.Id,
+                AttachmentId = attachment.Id
+            });
+        }
+        
+        await _scamReportAttachmentService.AddScamReportAttachmentRange(scamReportAttachments);
         
         
         TempData["Success"] = "Scam report submitted successfully!";

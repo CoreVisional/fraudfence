@@ -1,168 +1,154 @@
-﻿using FraudFence.Data;
+﻿using Amazon.Lambda.Core;
+using Amazon.SQS;
+using Amazon.SQS.Model;
+using FraudFence.Data;
 using FraudFence.EntityModels.Models;
-using FraudFence.Interface.Common;
-using FraudFence.Service.Common;
-using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
+using System.Text.Json;
 
-namespace FraudFence.Service
+[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+
+namespace FraudFence.Function.NewsletterSchedule;
+
+public class NewsletterSchedulerFunction
 {
-    public class NewsletterService : BaseService<Newsletter>
+    private readonly ApplicationDbContext _context;
+    private readonly AmazonSQSClient _amazonSQSClient;
+    private readonly string _queueUrl;
+
+    public NewsletterSchedulerFunction()
     {
-        private readonly IEmailService _emailService;
+        var connectionString = Environment.GetEnvironmentVariable("ConnectionString");
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseSqlServer(connectionString)
+            .Options;
 
-        public NewsletterService(ApplicationDbContext context, IEmailService emailService) : base(context)
+        _context = new ApplicationDbContext(options);
+        _amazonSQSClient = new AmazonSQSClient();
+        _queueUrl = "https://sqs.us-east-1.amazonaws.com/438883593337/newsletter-email-queue";
+    }
+
+    public async Task<string> FunctionHandler()
+    {
+        var due = await _context.Newsletters
+            .Include(n => n.Articles)
+            .Where(n => n.SentAt == null && n.ScheduledAt <= DateTime.Now && !n.IsDisabled)
+            .ToListAsync();
+
+        foreach (var nl in due)
         {
-            _emailService = emailService;
-        }
-
-        public override async Task UpdateAsync(Newsletter entity)
-        {
-            var _newsletter = GetById(entity.Id);
-
-            if (_newsletter == null)
-            {
-                return;
-            }
-
-            _newsletter.Subject = entity.Subject;
-            _newsletter.IntroText = entity.IntroText;
-            _newsletter.ScheduledAt = entity.ScheduledAt;
-            _newsletter.LastModified = entity.LastModified;
-
-            _context.Newsletters.Update(_newsletter);
-
-            await _context.SaveChangesAsync();
-        }
-
-        public override async Task DeleteAsync(Newsletter entity)
-        {
-            if (entity.SentAt.HasValue) throw new InvalidOperationException("Cannot delete a newsletter that has already been sent.");
-
-            if (!string.IsNullOrEmpty(entity.HangfireJobId))
-                BackgroundJob.Delete(entity.HangfireJobId);
-
-            await DisableAsync(entity);
-        }
-
-        public async Task SendNewsletterAsync(int newsletterId)
-        {
-            var newsletter = await _context.Newsletters
-                .Include(n => n.Articles)
-                .FirstOrDefaultAsync(n => n.Id == newsletterId);
-
-            if (newsletter == null) return;
-
-            var categoryIds = newsletter.Articles
-                .Select(a => a.ScamCategoryId)
-                .Distinct();
-
+            var categoryIds = nl.Articles.Select(a => a.ScamCategoryId).Distinct();
             var emails = await _context.Settings
                 .Where(s => categoryIds.Contains(s.ScamCategoryId) && s.Subscribed)
                 .Select(s => s.User.Email!)
                 .ToArrayAsync();
 
-            var body = GenerateEmailBody(newsletter);
+            var body = GenerateEmailBody(nl);
 
-            await _emailService.SendEmail(
-                newsletter.Subject,
-                emails,
-                body
-            );
-
-            newsletter.SentAt = DateTime.Now;
-            newsletter.IsDisabled = true;
-
-            await UpdateAsync(newsletter);
-        }
-
-        private static string GenerateEmailBody(Newsletter newsletter)
-        {
-            var body = new StringBuilder();
-
-            body.AppendLine("<!DOCTYPE html>");
-            body.AppendLine("<html lang=\"en\">");
-            body.AppendLine("<head>");
-            body.AppendLine("    <meta charset=\"UTF-8\">");
-            body.AppendLine("    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
-            body.AppendLine($"    <title>{newsletter.Subject}</title>");
-            body.AppendLine("    <style>");
-            body.AppendLine(GetEmailStyles());
-            body.AppendLine("    </style>");
-            body.AppendLine("</head>");
-            body.AppendLine("<body>");
-
-            // Email container
-            body.AppendLine("    <div class=\"email-container\">");
-
-            // Header
-            body.AppendLine("        <div class=\"header\">");
-            body.AppendLine("            <div class=\"logo\">");
-            body.AppendLine("                <span class=\"shield-icon\">🛡️</span>");
-            body.AppendLine("                <h1>FraudFence</h1>");
-            body.AppendLine("            </div>");
-            body.AppendLine("            <div class=\"tagline\">Protecting You from Scams</div>");
-            body.AppendLine("        </div>");
-
-            // Newsletter content
-            body.AppendLine("        <div class=\"content\">");
-            body.AppendLine($"            <h2 class=\"newsletter-title\">{newsletter.Subject}</h2>");
-
-            // Intro text
-            if (!string.IsNullOrEmpty(newsletter.IntroText))
+            foreach (var email in emails)
             {
-                body.AppendLine("            <div class=\"intro-text\">");
-                body.AppendLine($"                <p>{newsletter.IntroText}</p>");
-                body.AppendLine("            </div>");
-            }
-
-            // Articles section
-            if (newsletter.Articles.Count != 0)
-            {
-                body.AppendLine("            <div class=\"articles-section\">");
-                body.AppendLine("                <h3 class=\"section-title\">📰 Latest Scam Alerts</h3>");
-
-                foreach (var article in newsletter.Articles)
+                await _amazonSQSClient.SendMessageAsync(new SendMessageRequest
                 {
-                    body.AppendLine("                <div class=\"article\">");
-                    body.AppendLine("                    <div class=\"article-header\">");
-                    body.AppendLine($"                        <h4 class=\"article-title\">{article.Title}</h4>");
-                    body.AppendLine("                        <span class=\"danger-badge\">⚠️ ALERT</span>");
-                    body.AppendLine("                    </div>");
-                    body.AppendLine("                    <div class=\"article-content\">");
-                    body.AppendLine($"                        {article.Content}");
-                    body.AppendLine("                    </div>");
-                    body.AppendLine("                </div>");
-                }
-
-                body.AppendLine("            </div>");
+                    QueueUrl = _queueUrl,
+                    MessageBody = JsonSerializer.Serialize(
+                        new { To = email, nl.Subject, Body = body })
+                });
             }
 
-            // Footer
-            body.AppendLine("        </div>");
-            body.AppendLine("        <div class=\"footer\">");
-            body.AppendLine("            <div class=\"footer-content\">");
-            body.AppendLine("                <p><strong>Stay Protected!</strong></p>");
-            body.AppendLine("                <p>This newsletter was sent to keep you informed about the latest scam threats.</p>");
-            body.AppendLine("                <div class=\"social-links\">");
-            body.AppendLine("                    <span>Follow us for more updates</span>");
-            body.AppendLine("                </div>");
-            body.AppendLine("            </div>");
-            body.AppendLine("            <div class=\"unsubscribe\">");
-            body.AppendLine("                <p><small>Don't want to receive these emails? <a href=\"#\">Unsubscribe</a></small></p>");
-            body.AppendLine("            </div>");
-            body.AppendLine("        </div>");
-            body.AppendLine("    </div>");
-            body.AppendLine("</body>");
-            body.AppendLine("</html>");
-
-            return body.ToString();
+            nl.SentAt = DateTime.Now;
         }
 
-        private static string GetEmailStyles()
+        await _context.SaveChangesAsync();
+        return $"Processed {due.Count} newsletters";
+    }
+
+    private static string GenerateEmailBody(Newsletter newsletter)
+    {
+        var body = new StringBuilder();
+
+        body.AppendLine("<!DOCTYPE html>");
+        body.AppendLine("<html lang=\"en\">");
+        body.AppendLine("<head>");
+        body.AppendLine("    <meta charset=\"UTF-8\">");
+        body.AppendLine("    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
+        body.AppendLine($"    <title>{newsletter.Subject}</title>");
+        body.AppendLine("    <style>");
+        body.AppendLine(GetEmailStyles());
+        body.AppendLine("    </style>");
+        body.AppendLine("</head>");
+        body.AppendLine("<body>");
+
+        // Email container
+        body.AppendLine("    <div class=\"email-container\">");
+
+        // Header
+        body.AppendLine("        <div class=\"header\">");
+        body.AppendLine("            <div class=\"logo\">");
+        body.AppendLine("                <span class=\"shield-icon\">🛡️</span>");
+        body.AppendLine("                <h1>FraudFence</h1>");
+        body.AppendLine("            </div>");
+        body.AppendLine("            <div class=\"tagline\">Protecting You from Scams</div>");
+        body.AppendLine("        </div>");
+
+        // Newsletter content
+        body.AppendLine("        <div class=\"content\">");
+        body.AppendLine($"            <h2 class=\"newsletter-title\">{newsletter.Subject}</h2>");
+
+        // Intro text
+        if (!string.IsNullOrEmpty(newsletter.IntroText))
         {
-            return @"
+            body.AppendLine("            <div class=\"intro-text\">");
+            body.AppendLine($"                <p>{newsletter.IntroText}</p>");
+            body.AppendLine("            </div>");
+        }
+
+        // Articles section
+        if (newsletter.Articles.Count != 0)
+        {
+            body.AppendLine("            <div class=\"articles-section\">");
+            body.AppendLine("                <h3 class=\"section-title\">📰 Latest Scam Alerts</h3>");
+
+            foreach (var article in newsletter.Articles)
+            {
+                body.AppendLine("                <div class=\"article\">");
+                body.AppendLine("                    <div class=\"article-header\">");
+                body.AppendLine($"                        <h4 class=\"article-title\">{article.Title}</h4>");
+                body.AppendLine("                        <span class=\"danger-badge\">⚠️ ALERT</span>");
+                body.AppendLine("                    </div>");
+                body.AppendLine("                    <div class=\"article-content\">");
+                body.AppendLine($"                        {article.Content}");
+                body.AppendLine("                    </div>");
+                body.AppendLine("                </div>");
+            }
+
+            body.AppendLine("            </div>");
+        }
+
+        // Footer
+        body.AppendLine("        </div>");
+        body.AppendLine("        <div class=\"footer\">");
+        body.AppendLine("            <div class=\"footer-content\">");
+        body.AppendLine("                <p><strong>Stay Protected!</strong></p>");
+        body.AppendLine("                <p>This newsletter was sent to keep you informed about the latest scam threats.</p>");
+        body.AppendLine("                <div class=\"social-links\">");
+        body.AppendLine("                    <span>Follow us for more updates</span>");
+        body.AppendLine("                </div>");
+        body.AppendLine("            </div>");
+        body.AppendLine("            <div class=\"unsubscribe\">");
+        body.AppendLine("                <p><small>Don't want to receive these emails? <a href=\"#\">Unsubscribe</a></small></p>");
+        body.AppendLine("            </div>");
+        body.AppendLine("        </div>");
+        body.AppendLine("    </div>");
+        body.AppendLine("</body>");
+        body.AppendLine("</html>");
+
+        return body.ToString();
+    }
+
+    private static string GetEmailStyles()
+    {
+        return @"
                 * {
                     margin: 0;
                     padding: 0;
@@ -384,6 +370,5 @@ namespace FraudFence.Service
                     }
                 }
             ";
-        }
     }
 }

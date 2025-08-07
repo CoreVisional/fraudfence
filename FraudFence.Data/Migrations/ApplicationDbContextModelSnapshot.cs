@@ -318,9 +318,6 @@ namespace FraudFence.Data.Migrations
                     b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
 
-                    b.Property<string>("HangfireJobId")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("IntroText")
                         .HasColumnType("nvarchar(max)");
 

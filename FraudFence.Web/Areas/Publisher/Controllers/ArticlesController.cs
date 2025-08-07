@@ -1,10 +1,12 @@
-﻿using FraudFence.EntityModels.Models;
+﻿
+
+using FraudFence.EntityModels.Dto.Article;
 using FraudFence.Service;
 using FraudFence.Web.Areas.Publisher.Models.Articles;
+using FraudFence.Web.Infrastructure.Api;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace FraudFence.Web.Areas.Publisher.Controllers
@@ -13,37 +15,26 @@ namespace FraudFence.Web.Areas.Publisher.Controllers
     [Authorize(Roles = "Publisher")]
     public class ArticlesController : Controller
     {
-        private readonly ArticleService _articleService;
+        private readonly ArticleApiClient _articleApiClient;
         private readonly ScamCategoryService _scamCategoryService;
-        private readonly NewsletterService _newsletterService;
 
-        public ArticlesController(ArticleService articleService, ScamCategoryService scamCategoryService, NewsletterService newsletterService)
+        public ArticlesController(ArticleApiClient articleApiClient, ScamCategoryService scamCategoryService)
         {
-            _articleService = articleService;
+            _articleApiClient = articleApiClient;
             _scamCategoryService = scamCategoryService;
-            _newsletterService = newsletterService;
         }
 
         [HttpGet]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var blocked = _newsletterService.GetAll(getDisabled: true)
-                .Where(n => n.SentAt == null)
-                .SelectMany(n => n.Articles.Select(a => a.Id))
-                .Distinct()
-                .ToHashSet();
-
-            var vm = _articleService.GetAll()
-                .Include(a => a.ScamCategory)
-                .OrderByDescending(a => a.CreatedAt)
-                .Select(a => new ArticleIndexViewModel
-                {
-                    Id = a.Id,
-                    Title = a.Title,
-                    CategoryName = a.ScamCategory.Name,
-                    CanDelete = !blocked.Contains(a.Id)
-                })
-                .ToList();
+            var list = await _articleApiClient.GetAllAsync();
+            var vm = list.Select(a => new ArticleIndexViewModel
+            {
+                Id = a.Id,
+                Title = a.Title,
+                CategoryName = a.CategoryName,
+                CanDelete = true
+            }).ToList();
 
             return View(vm);
         }
@@ -72,37 +63,19 @@ namespace FraudFence.Web.Areas.Publisher.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(ArticleCreateViewModel vm)
         {
-            if (!ModelState.IsValid)
-            {
-                vm.Categories = [.. _scamCategoryService
-                    .GetAll()
-                    .OrderBy(c => c.Name)
-                    .Select(c => new SelectListItem
-                    {
-                        Value = c.Id.ToString(),
-                        Text = c.Name
-                    })];
-
-                return View(vm);
-            }
+            if (!ModelState.IsValid) return View(FillCategories(vm));
 
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var article = new Article
-            {
-                Title = vm.Title,
-                Content = vm.Content,
-                ScamCategoryId = vm.ScamCategoryId,
-                UserId = userId
-            };
+            var dto = new CreateArticleDTO(vm.Title, vm.Content, vm.ScamCategoryId, userId);
+            await _articleApiClient.CreateAsync(dto);
 
-            await _articleService.AddAsync(article);
             return RedirectToAction(nameof(Index));
         }
 
         [HttpGet]
-        public IActionResult Edit(int id)
+        public async Task<IActionResult> Edit(int id)
         {
-            var article = _articleService.GetById(id);
+            var article = await _articleApiClient.GetAsync(id);
 
             if (article == null)
             {
@@ -132,41 +105,23 @@ namespace FraudFence.Web.Areas.Publisher.Controllers
         {
             if (!ModelState.IsValid)
             {
-                vm.Categories = [.. _scamCategoryService
-                    .GetAll()
-                    .OrderBy(c => c.Name)
-                    .Select(c => new SelectListItem
-                    {
-                        Value = c.Id.ToString(),
-                        Text = c.Name
-                    })];
-
+                vm.Categories = [.. _scamCategoryService.GetAll().OrderBy(c => c.Name).Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Name })];
                 return View(vm);
             }
 
-            var article = new Article
-            {
-                Id = vm.Id,
-                ScamCategoryId = vm.ScamCategoryId,
-                Title = vm.Title,
-                Content = vm.Content,
-                LastModified = DateTime.Now
-            };
+            var dto = new CreateArticleDTO(vm.Title, vm.Content, vm.ScamCategoryId, 0);
+            await _articleApiClient.UpdateAsync(vm.Id, dto);
 
-            await _articleService.UpdateAsync(article);
-
-            TempData["notice"] = "Articles updated successfully.";
+            TempData["notice"] = "Article updated successfully.";
             TempData["noticeBg"] = "alert-success";
 
             return RedirectToAction(nameof(Index));
         }
 
         [HttpGet]
-        public IActionResult Details(int id)
+        public async Task<IActionResult> Details(int id)
         {
-            var article = _articleService.GetAll(getDisabled: true)
-                .Include(a => a.ScamCategory)
-                .FirstOrDefault(a => a.Id == id);
+            var article = await _articleApiClient.GetAsync(id);
 
             if (article == null) return NotFound();
 
@@ -178,23 +133,18 @@ namespace FraudFence.Web.Areas.Publisher.Controllers
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
-            var article = _articleService.GetById(id);
-
-            if (article == null) return NotFound();
-
-            try
-            {
-                await _articleService.DeleteAsync(article);
-                TempData["notice"] = "Article deleted.";
-                TempData["noticeBg"] = "alert-success";
-            }
-            catch (InvalidOperationException ex)
-            {
-                TempData["notice"] = ex.Message;
-                TempData["noticeBg"] = "alert-danger";
-            }
+            await _articleApiClient.DeleteAsync(id);
+            TempData["notice"] = "Article deleted.";
+            TempData["noticeBg"] = "alert-success";
 
             return RedirectToAction(nameof(Index));
+        }
+
+        private ArticleCreateViewModel FillCategories(ArticleCreateViewModel vm)
+        {
+            vm.Categories = _scamCategoryService.GetAll().OrderBy(c => c.Name)
+                .Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Name });
+            return vm;
         }
     }
 }

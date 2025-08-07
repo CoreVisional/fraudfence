@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "Mock Lambda Test Tool": {
+      "commandName": "Executable",
+      "commandLineArgs": "--port 5050",
+      "workingDirectory": ".\\bin\\$(Configuration)\\net8.0",
+      "executablePath": "%USERPROFILE%\\.dotnet\\tools\\dotnet-lambda-test-tool-8.0.exe",
+      "environmentVariables": {
+        "ConnectionString": "Server=fraudfence-db.czjeqyw1icfl.us-east-1.rds.amazonaws.com;Database=fraudfence;User Id=admin;Password=-aW4lMPz-2ZCemD6YVg!9<rsPfdB;TrustServerCertificate=True;MultipleActiveResultSets=True;"
+      }
+    }
+  }
+}
