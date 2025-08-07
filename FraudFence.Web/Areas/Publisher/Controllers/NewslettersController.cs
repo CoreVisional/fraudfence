@@ -1,11 +1,10 @@
-﻿using FraudFence.EntityModels.Models;
-using FraudFence.Service;
+﻿using FraudFence.EntityModels.Dto.Newsletter;
 using FraudFence.Web.Areas.Publisher.Models.Newsletters;
-using Hangfire;
+using FraudFence.Web.Infrastructure.Api;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace FraudFence.Web.Areas.Publisher.Controllers
 {
@@ -13,45 +12,41 @@ namespace FraudFence.Web.Areas.Publisher.Controllers
     [Authorize(Roles = "Publisher")]
     public class NewslettersController : Controller
     {
-        private readonly NewsletterService _newsletterService;
-        private readonly ArticleService _articleService;
-        private readonly IBackgroundJobClient _backgroundJobClient;
+        private readonly NewsletterApiClient _newsletterApiClient;
+        private readonly ArticleApiClient _articleApiClient;
 
-        public NewslettersController(NewsletterService newsletterService, ArticleService articleService, IBackgroundJobClient backgroundJobClient)
+        public NewslettersController(NewsletterApiClient newsletterApiClient, ArticleApiClient articleApiClient)
         {
-            _newsletterService = newsletterService;
-            _articleService = articleService;
-            _backgroundJobClient = backgroundJobClient;
+            _newsletterApiClient = newsletterApiClient;
+            _articleApiClient = articleApiClient;
         }
 
         [HttpGet]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var vm = _newsletterService.GetAll(getDisabled: true)
-                .OrderBy(n => n.ScheduledAt)
-                .Select(n => new NewsletterIndexViewModel
-                {
-                    Id = n.Id,
-                    Subject = n.Subject,
-                    ScheduledAt = n.ScheduledAt,
-                    SentAt = n.SentAt,
-                    IsDisabled = n.IsDisabled
-                })
-                .ToList();
+            var newsletters = await _newsletterApiClient.GetAllAsync();
+            var vm = newsletters.Select(n => new NewsletterIndexViewModel
+            {
+                Id = n.Id,
+                Subject = n.Subject,
+                ScheduledAt = n.ScheduledAt,
+                SentAt = n.SentAt,
+                IsDisabled = n.IsDisabled
+            }).ToList();
 
             return View(vm);
         }
 
         [HttpGet]
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
             var now = DateTime.Now;
+            var articles = await _articleApiClient.GetAllAsync();
 
             var vm = new NewsletterCreateViewModel
             {
                 ScheduledAt = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0),
-                Articles = [.. _articleService.GetAll()
-                    .OrderBy(a => a.Title)
+                Articles = [.. articles.OrderBy(a => a.Title)
                     .Select(a => new SelectListItem
                     {
                         Value = a.Id.ToString(),
@@ -67,73 +62,46 @@ namespace FraudFence.Web.Areas.Publisher.Controllers
         {
             if (!ModelState.IsValid)
             {
-                var now = DateTime.Now;
-
-                vm.ScheduledAt = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0);
-
-                vm.Articles = [.. _articleService.GetAll()
-                    .OrderBy(a => a.Title)
+                var articles = await _articleApiClient.GetAllAsync();
+                vm.Articles = articles.OrderBy(a => a.Title)
                     .Select(a => new SelectListItem
                     {
                         Value = a.Id.ToString(),
                         Text = a.Title
-                    })];
+                    }).ToList();
 
                 return View(vm);
             }
 
-            var newsletter = new Newsletter
-            {
-                Subject = vm.Subject,
-                IntroText = vm.IntroText,
-                ScheduledAt = vm.ScheduledAt
-            };
-
-            var articles = _articleService.GetAll()
-                .Where(a => vm.SelectedArticleIds.Contains(a.Id))
-                .ToList();
-
-            foreach (var art in articles) newsletter.Articles.Add(art);
-
-            await _newsletterService.AddAsync(newsletter);
-
-            var jobId = _backgroundJobClient.Schedule(
-                () => _newsletterService.SendNewsletterAsync(newsletter.Id),
-                newsletter.ScheduledAt
-            );
-
-            newsletter.HangfireJobId = jobId;
-            await _newsletterService.UpdateAsync(newsletter);
+            var dto = new CreateNewsletterDTO(vm.Subject, vm.IntroText, vm.ScheduledAt, vm.SelectedArticleIds);
+            await _newsletterApiClient.CreateAsync(dto);
 
             return RedirectToAction(nameof(Index));
         }
 
         [HttpGet]
-        public IActionResult Details(int id)
+        public async Task<IActionResult> Details(int id)
         {
-            var newsletter = _newsletterService
-                .GetAll(getDisabled: true)
-                .Include(n => n.Articles)
-                    .ThenInclude(a => a.ScamCategory)
-                .FirstOrDefault(n => n.Id == id);
+            var newsletter = await _newsletterApiClient.GetAsync(id);
+            if (newsletter == null) return NotFound();
 
-            if (newsletter == null)
-                return NotFound();
+            var jsonElement = (JsonElement)newsletter;
 
             var vm = new NewsletterDetailsViewModel
             {
-                Id = newsletter.Id,
-                Subject = newsletter.Subject,
-                IntroText = newsletter.IntroText,
-                ScheduledAt = newsletter.ScheduledAt,
-                SentAt = newsletter.SentAt,
-                Articles = [.. newsletter.Articles
+                Id = jsonElement.GetProperty("id").GetInt32(),
+                Subject = jsonElement.GetProperty("subject").GetString()!,
+                IntroText = jsonElement.TryGetProperty("introText", out var introTextProp) ? introTextProp.GetString() : null,
+                ScheduledAt = jsonElement.GetProperty("scheduledAt").GetDateTime(),
+                SentAt = jsonElement.TryGetProperty("sentAt", out var sentAtProp) && sentAtProp.ValueKind != JsonValueKind.Null ?
+                    sentAtProp.GetDateTime() : null,
+                Articles = [.. jsonElement.GetProperty("articles").EnumerateArray()
                     .Select(a => new NewsletterArticleViewModel
                     {
-                        Id = a.Id,
-                        Title = a.Title,
-                        CategoryName = a.ScamCategory.Name,
-                        IsDisabled = a.IsDisabled,
+                        Id = a.GetProperty("id").GetInt32(),
+                        Title = a.GetProperty("title").GetString()!,
+                        CategoryName = a.GetProperty("categoryName").GetString()!,
+                        IsDisabled = a.GetProperty("isDisabled").GetBoolean()
                     })]
             };
 
@@ -141,31 +109,28 @@ namespace FraudFence.Web.Areas.Publisher.Controllers
         }
 
         [HttpGet]
-        public IActionResult Edit(int id)
+        public async Task<IActionResult> Edit(int id)
         {
-            var nl = _newsletterService
-                .GetAll(getDisabled: true)
-                .Include(x => x.Articles)
-                .FirstOrDefault(x => x.Id == id);
+            var newsletter = await _newsletterApiClient.GetAsync(id);
+            if (newsletter == null) return NotFound();
 
-            if (nl == null) return NotFound();
-
-            var all = _articleService.GetAll()
-                .OrderBy(a => a.Title)
-                .Select(a => new SelectListItem
-                {
-                    Value = a.Id.ToString(),
-                    Text = a.Title
-                });
+            var articles = await _articleApiClient.GetAllAsync();
+            var jsonElement = (JsonElement)newsletter;
 
             var vm = new NewsletterEditViewModel
             {
-                Id = nl.Id,
-                Subject = nl.Subject,
-                IntroText = nl.IntroText,
-                ScheduledAt = nl.ScheduledAt,
-                Articles = all,
-                SelectedArticleIds = nl.Articles.Select(a => a.Id).ToList()
+                Id = jsonElement.GetProperty("id").GetInt32(),
+                Subject = jsonElement.GetProperty("subject").GetString()!,
+                IntroText = jsonElement.TryGetProperty("introText", out var introTextProp) ? introTextProp.GetString() : null,
+                ScheduledAt = jsonElement.GetProperty("scheduledAt").GetDateTime(),
+                Articles = articles.OrderBy(a => a.Title)
+                    .Select(a => new SelectListItem
+                    {
+                        Value = a.Id.ToString(),
+                        Text = a.Title
+                    }).ToList(),
+                SelectedArticleIds = jsonElement.GetProperty("articles").EnumerateArray()
+                    .Select(a => a.GetProperty("id").GetInt32()).ToList()
             };
 
             return View(vm);
@@ -176,8 +141,8 @@ namespace FraudFence.Web.Areas.Publisher.Controllers
         {
             if (!ModelState.IsValid)
             {
-                vm.Articles = _articleService.GetAll()
-                    .OrderBy(a => a.Title)
+                var articles = await _articleApiClient.GetAllAsync();
+                vm.Articles = articles.OrderBy(a => a.Title)
                     .Select(a => new SelectListItem
                     {
                         Value = a.Id.ToString(),
@@ -186,30 +151,8 @@ namespace FraudFence.Web.Areas.Publisher.Controllers
                 return View(vm);
             }
 
-            var nl = _newsletterService
-                .GetAll(getDisabled: true)
-                .Include(x => x.Articles)
-                .FirstOrDefault(x => x.Id == vm.Id);
-            if (nl == null) return NotFound();
-
-            nl.Subject = vm.Subject;
-            nl.IntroText = vm.IntroText;
-            nl.ScheduledAt = vm.ScheduledAt;
-
-            nl.Articles.Clear();
-            var toAdd = _articleService.GetAll()
-                .Where(a => vm.SelectedArticleIds.Contains(a.Id));
-            foreach (var art in toAdd) nl.Articles.Add(art);
-
-            await _newsletterService.UpdateAsync(nl);
-
-            var jobId = _backgroundJobClient.Schedule(
-                () => _newsletterService.SendNewsletterAsync(nl.Id),
-                nl.ScheduledAt
-            );
-
-            nl.HangfireJobId = jobId;
-            await _newsletterService.UpdateAsync(nl);
+            var dto = new UpdateNewsletterDTO(vm.Subject, vm.IntroText, vm.ScheduledAt, vm.SelectedArticleIds);
+            await _newsletterApiClient.UpdateAsync(vm.Id, dto);
 
             TempData["notice"] = "Newsletter updated.";
             TempData["noticeBg"] = "alert-success";
@@ -219,16 +162,13 @@ namespace FraudFence.Web.Areas.Publisher.Controllers
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
-            var nl = _newsletterService.GetById(id);
-            if (nl == null) return NotFound();
-
             try
             {
-                await _newsletterService.DeleteAsync(nl);
+                await _newsletterApiClient.DeleteAsync(id);
                 TempData["notice"] = "Scheduled newsletter deleted.";
                 TempData["noticeBg"] = "alert-success";
             }
-            catch (InvalidOperationException ex)
+            catch (HttpRequestException ex)
             {
                 TempData["notice"] = ex.Message;
                 TempData["noticeBg"] = "alert-danger";
