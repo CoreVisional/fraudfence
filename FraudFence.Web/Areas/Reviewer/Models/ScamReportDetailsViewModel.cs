@@ -18,7 +18,7 @@ namespace FraudFence.Web.Areas.Reviewer.Models
         public int? ExternalAgencyId { get; set; }
         public string? ExternalAgencyName { get; set; }
         public List<SelectListItem>? Agencies { get; set; }
-        public List<int> SelectedReviewerIds { get; set; } = new();
+        public List<string> SelectedReviewerIds { get; set; } = new();
         public List<SelectListItem> AllReviewers { get; set; } = new();
         public DateTime FirstEncounteredOn { get; set; }
     }

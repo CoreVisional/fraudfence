@@ -21,13 +21,10 @@ namespace FraudFence.Web.Areas.Reviewer.Controllers
     {
         private readonly IReviewerService _reviewerService;
         private readonly ApplicationDbContext _context;
-        private readonly UserManager<ApplicationUser> _userManager;
-
-        public ScamReportsController(IReviewerService reviewerService, ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public ScamReportsController(IReviewerService reviewerService, ApplicationDbContext context)
         {
             _reviewerService = reviewerService;
             _context = context;
-            _userManager = userManager;
         }
 
         public async Task<IActionResult> Index(string status)
@@ -60,20 +57,9 @@ namespace FraudFence.Web.Areas.Reviewer.Controllers
                     Value = a.Id.ToString(),
                     Text = a.Name
                 }).ToListAsync();
-            // Get all users with Reviewer role
-            var reviewerRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Reviewer");
+            // Get all users with Reviewer role - This will be re-implemented later
             var allReviewers = new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
-            if (reviewerRole != null)
-            {
-                var reviewerIds = _context.UserRoles.Where(ur => ur.RoleId == reviewerRole.Id).Select(ur => ur.UserId);
-                allReviewers = await _context.Users
-                    .Where(u => reviewerIds.Contains(u.Id))
-                    .Select(u => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
-                    {
-                        Value = u.Id.ToString(),
-                        Text = u.Name
-                    }).ToListAsync();
-            }
+            
             var viewModel = new ScamReportDetailsViewModel
             {
                 Id = report.Id,

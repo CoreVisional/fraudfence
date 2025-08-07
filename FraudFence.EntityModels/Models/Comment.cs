@@ -1,10 +1,10 @@
-﻿using FraudFence.EntityModels.common;
+﻿using FraudFence.EntityModels.Common;
 
 namespace FraudFence.EntityModels.Models
 {
-    public class Comment : BaseEntity
+    public class Comment : BaseEntity<int>
     {
-        public int UserId { get; set; }
+        public string UserId { get; set; }
 
         public int PostId { get; set; }
 

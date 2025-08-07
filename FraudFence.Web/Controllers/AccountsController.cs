@@ -1,25 +1,27 @@
 ﻿using FraudFence.EntityModels.Dto;
-using FraudFence.EntityModels.Models;
-using FraudFence.Service;
 using FraudFence.Web.Models;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Security.Claims;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace FraudFence.Web.Controllers
 {
     public class AccountsController : Controller
     {
-        private readonly UserService _userService;
+        private readonly HttpClient _httpClient;
+        private readonly string _apiBaseUrl;
 
-        private readonly UserManager<ApplicationUser> _userManager;
-
-        private readonly SignInManager<ApplicationUser> _signInManager;
-
-        public AccountsController(UserService userService, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
+        public AccountsController(IHttpClientFactory httpClientFactory, IConfiguration configuration)
         {
-            _userService = userService;
-            _userManager = userManager;
-            _signInManager = signInManager;
+            _httpClient = httpClientFactory.CreateClient("UsersApi");
+            _apiBaseUrl = configuration["AWS:ApiGateway:UserManagementApiUrl"]!;
         }
 
         [HttpGet]
@@ -40,19 +42,16 @@ namespace FraudFence.Web.Controllers
             if (!ModelState.IsValid) return View(vm);
 
             var dto = new RegistrationDTO(vm.Name, vm.Email, vm.Password);
+            var response = await _httpClient.PostAsJsonAsync($"{_apiBaseUrl}/register", dto);
 
-            var (result, user) = await _userService.CreateAsync(dto);
-
-            if (!result.Succeeded)
+            if (!response.IsSuccessStatusCode)
             {
-                foreach (var e in result.Errors)
-                    ModelState.AddModelError(string.Empty, e.Description);
+                ModelState.AddModelError(string.Empty, "Registration failed. Please try again.");
                 return View(vm);
             }
 
-            await _signInManager.SignInAsync(user!, isPersistent: false);
-
-            return RedirectToAction("Index", "Home", new { area = "Consumer" });
+            // Automatically log the user in after registration
+            return await Login(new LoginViewModel { Email = vm.Email, Password = vm.Password });
         }
 
         [HttpPost]
@@ -60,28 +59,42 @@ namespace FraudFence.Web.Controllers
         {
             if (!ModelState.IsValid) return View(vm);
 
-            var user = await _userManager.FindByEmailAsync(vm.Email);
+            var loginDto = new LoginDTO { Email = vm.Email, Password = vm.Password };
+            
+            // Log the request body
+            System.Diagnostics.Debug.WriteLine($"Sending login request to {_apiBaseUrl}/login with body: {JsonSerializer.Serialize(loginDto)}");
 
-            if (user == null)
+            var response = await _httpClient.PostAsJsonAsync($"{_apiBaseUrl}/login", loginDto);
+            
+            // Log the full response body
+            var responseBody = await response.Content.ReadAsStringAsync();
+            System.Diagnostics.Debug.WriteLine($"Received login response. Status: {response.StatusCode}, Body: {responseBody}");
+
+            if (!response.IsSuccessStatusCode)
             {
                 ModelState.AddModelError("", "Invalid email or password.");
-
                 return View(vm);
             }
 
-            var result = await _signInManager.CheckPasswordSignInAsync(user, vm.Password, lockoutOnFailure: true);
+            var tokenResponse = JsonSerializer.Deserialize<JsonElement>(responseBody);
+            var idToken = tokenResponse.GetProperty("IdToken").GetString();
 
-            if (!result.Succeeded)
+            var handler = new JwtSecurityTokenHandler();
+            var jsonToken = handler.ReadToken(idToken) as JwtSecurityToken;
+
+            var claims = new List<Claim>(jsonToken!.Claims);
+            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme, ClaimTypes.Email, "cognito:groups");
+            var authProperties = new AuthenticationProperties
             {
-                ModelState.AddModelError("", result.IsLockedOut
-                    ? "Account locked. Try again later."
-                    : "Invalid email or password.");
-                return View(vm);
-            }
+                IsPersistent = false
+            };
 
-            await _signInManager.SignInAsync(user, isPersistent: false);
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                new ClaimsPrincipal(claimsIdentity),
+                authProperties);
 
-            var roles = await _userManager.GetRolesAsync(user);
+            var roles = claims.Where(c => c.Type == "cognito:groups").Select(c => c.Value).ToList();
             var area = roles.Contains("Admin") ? "Admin"
                        : roles.Contains("Publisher") ? "Publisher"
                        : roles.Contains("Reviewer") ? "Reviewer"
@@ -93,8 +106,7 @@ namespace FraudFence.Web.Controllers
         [HttpPost]
         public async Task<IActionResult> Logout()
         {
-            await _signInManager.SignOutAsync();
-
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction("Index", "Home");
         }
     }

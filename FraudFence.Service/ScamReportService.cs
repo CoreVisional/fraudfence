@@ -36,7 +36,7 @@ public class ScamReportService : BaseService<ScamReport>
         _context.SaveChanges();
     }
 
-    public async Task<List<ScamReport>> GetScamReportsWithUserId(int userId)
+    public async Task<List<ScamReport>> GetScamReportsWithUserId(string userId)
     {
         return await _context.ScamReports
             .Include(r => r.ScamCategory)

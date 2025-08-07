@@ -1,7 +1,7 @@
 @model FraudFence.EntityModels.Dto.CreateUserViewModel
 @{
     ViewData["Title"] = "Create User";
-    var roles = ViewBag.Roles as List<string>;
+    var roles = ViewBag.Roles as List<string> ?? new List<string>();
 }
 <h1>Create User</h1>
 <form asp-action="Create" method="post">

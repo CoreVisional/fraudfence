@@ -1,4 +1,4 @@
-﻿using FraudFence.EntityModels.common;
+﻿using FraudFence.EntityModels.Common;
 using FraudFence.Interface.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -21,16 +21,16 @@ namespace FraudFence.Data
             var _now = DateTime.Now;
             var _userId = _userContext.Id;
 
-            foreach (var entry in eventData.Context.ChangeTracker.Entries<BaseEntity>().Where(x => x.State == EntityState.Added || x.State == EntityState.Modified))
+            foreach (var entry in eventData.Context.ChangeTracker.Entries<BaseEntity<int>>().Where(x => x.State == EntityState.Added || x.State == EntityState.Modified))
             {
                 if (entry.State == EntityState.Added)
                 {
-                    entry.Entity.CreatedAt = _now;
-                    entry.Entity.CreatedBy = _userId;
+                    // entry.Entity.CreatedAt = _now;
+                    // entry.Entity.CreatedBy = _userId;
                 }
 
-                entry.Entity.LastModified = _now;
-                entry.Entity.ModifiedBy = _userId;
+                // entry.Entity.LastModified = _now;
+                // entry.Entity.ModifiedBy = _userId;
             }
 
             return base.SavingChangesAsync(eventData, result, cancellationToken);

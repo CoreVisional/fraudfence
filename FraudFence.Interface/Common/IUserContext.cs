@@ -2,6 +2,6 @@
 {
     public interface IUserContext
     {
-        int Id { get; }
+        string Id { get; }
     }
 }

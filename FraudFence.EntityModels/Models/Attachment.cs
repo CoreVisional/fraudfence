@@ -1,8 +1,8 @@
-﻿using FraudFence.EntityModels.common;
+﻿using FraudFence.EntityModels.Common;
 
 namespace FraudFence.EntityModels.Models
 {
-    public class Attachment : BaseEntity
+    public class Attachment : BaseEntity<int>
     {
         public required string FileName { get; set; }
 

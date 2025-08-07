@@ -63,7 +63,7 @@ namespace FraudFence.Web.Areas.Publisher.Controllers
         {
             if (!ModelState.IsValid) return View(FillCategories(vm));
 
-            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
             var dto = new CreateArticleDTO(vm.Title, vm.Content, vm.ScamCategoryId, userId);
             await _articleApiClient.CreateAsync(dto);
 
@@ -107,7 +107,8 @@ namespace FraudFence.Web.Areas.Publisher.Controllers
                 return View(vm);
             }
 
-            var dto = new CreateArticleDTO(vm.Title, vm.Content, vm.ScamCategoryId, 0);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var dto = new CreateArticleDTO(vm.Title, vm.Content, vm.ScamCategoryId, userId);
             await _articleApiClient.UpdateAsync(vm.Id, dto);
 
             TempData["notice"] = "Article updated successfully.";

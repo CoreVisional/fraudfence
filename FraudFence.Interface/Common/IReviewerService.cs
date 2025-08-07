@@ -8,6 +8,6 @@ namespace FraudFence.Interface.Common
     {
         Task<List<ScamReport>> GetScamReportsAsync(string status);
         Task<ScamReport> GetScamReportDetailsAsync(int id);
-        Task UpdateScamReportAsync(ScamReport report, List<int> reviewerIds, int? externalAgencyId, string investigationNotes, EntityModels.Enums.ReportStatus status);
+        Task UpdateScamReportAsync(ScamReport report, List<string> reviewerIds, int? externalAgencyId, string investigationNotes, EntityModels.Enums.ReportStatus status);
     }
 } 

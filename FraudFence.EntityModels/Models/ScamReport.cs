@@ -1,9 +1,9 @@
-﻿using FraudFence.EntityModels.common;
+﻿using FraudFence.EntityModels.Common;
 using FraudFence.EntityModels.Enums;
 
 namespace FraudFence.EntityModels.Models
 {
-    public class ScamReport : BaseEntity
+    public class ScamReport : BaseEntity<int>
     {
         public int ScamCategoryId { get; set; }
 
@@ -11,7 +11,7 @@ namespace FraudFence.EntityModels.Models
 
         public string? GuestId { get; set; }
         
-        public int? UserId { get; set; }
+        public string? UserId { get; set; }
         
         public DateTime FirstEncounteredOn { get; set; }
 

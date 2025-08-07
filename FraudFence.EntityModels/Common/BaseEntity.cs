@@ -1,21 +1,12 @@
-﻿namespace FraudFence.EntityModels.common
+﻿namespace FraudFence.EntityModels.Common
 {
-    public abstract class BaseEntity
+    public abstract class BaseEntity<T>
     {
-        #region Properties
-
-        public int Id { get; set; }
-
-        public bool IsDisabled { get; set; }
-
-        public int? CreatedBy { get; set; }
-
+        public T Id { get; set; }
         public DateTime CreatedAt { get; set; }
-
-        public int? ModifiedBy { get; set; }
-
+        public string? CreatedBy { get; set; }
         public DateTime LastModified { get; set; }
-
-        #endregion
+        public string? ModifiedBy { get; set; }
+        public bool IsDisabled { get; set; }
     }
 }

@@ -1,17 +1,16 @@
 ﻿using FraudFence.EntityModels.Models;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace FraudFence.Data
 {
-    public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityRole<int>, int>
+    public class ApplicationDbContext : DbContext
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
         }
 
+        public virtual DbSet<ApplicationUser> Users { get; set; }
         public virtual DbSet<Article> Articles { get; set; }
 
         public virtual DbSet<Attachment> Attachments { get; set; }
@@ -106,37 +105,6 @@ namespace FraudFence.Data
             });
 
             #region Data Seeding
-
-            modelBuilder.Entity<IdentityRole<int>>(x =>
-            {
-                x.HasIndex(r => r.NormalizedName).IsUnique();
-                x.HasData(
-                    new IdentityRole<int>
-                    {
-                        Id = 1,
-                        Name = "Consumer",
-                        NormalizedName = "CONSUMER"
-                    },
-                    new IdentityRole<int>
-                    {
-                        Id = 2,
-                        Name = "Reviewer",
-                        NormalizedName = "REVIEWER"
-                    },
-                    new IdentityRole<int>
-                    {
-                        Id = 3,
-                        Name = "Publisher",
-                        NormalizedName = "PUBLISHER"
-                    },
-                    new IdentityRole<int>
-                    {
-                        Id = 4,
-                        Name = "Admin",
-                        NormalizedName = "ADMIN"
-                    }
-                );
-            });
 
             modelBuilder.Entity<ScamCategory>(e =>
             {

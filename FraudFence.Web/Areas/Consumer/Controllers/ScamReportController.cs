@@ -10,28 +10,25 @@ using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using FraudFence.Service;
 using FraudFence.Service.Common;
+using System.Security.Claims;
 
 namespace FraudFence.Web.Areas.Consumer.Controllers;
 
 [Area("Consumer")]
 public class ScamReportController(
-    UserManager<ApplicationUser> userManager,
     ScamReportService _scamReportService,
     ScamCategoryService _scamCategoryService,
     ExternalAgencyService _externalAgencyService,
     PostService _postService) : Controller
 {
-    
-    
-    
-
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Post(int id)
     {
         int scamReportId = id;
         
-        var currentUser = await userManager.GetUserAsync(User);
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(currentUserId)) return Unauthorized();
 
         ScamReport? scamReport = await _scamReportService.GetScamReport(scamReportId);
 
@@ -45,7 +42,7 @@ public class ScamReportController(
             return Unauthorized("Unverified scam report");
         }
 
-        if (currentUser == null || currentUser.Id != scamReport.UserId)
+        if (scamReport.UserId != currentUserId)
         {
             return Unauthorized();
         }
@@ -59,12 +56,12 @@ public class ScamReportController(
 
         Post post = new Post
         {
-            UserId = currentUser.Id,
+            UserId = currentUserId,
             Content = scamReport.Description,
             ScamReportId = scamReportId,
             CreatedAt = DateTime.Now,
-            ModifiedBy = currentUser.Id,
-            CreatedBy = currentUser.Id,
+            ModifiedBy = currentUserId,
+            CreatedBy = currentUserId,
             LastModified = DateTime.Now
         };
         
@@ -75,41 +72,12 @@ public class ScamReportController(
         return RedirectToAction(nameof(ViewAll));
     }
     
-    // [HttpPost]
-    // [ValidateAntiForgeryToken]
-    // public async Task<IActionResult> Delete(int id)
-    // {
-    //     var currentUser = await userManager.GetUserAsync(User);
-    //     
-    //     ScamReport? scamReport = await context.ScamReports
-    //         .IgnoreAutoIncludes()
-    //         .SingleOrDefaultAsync(sr => sr.Id == id);
-    //     
-    //     if (scamReport == null)
-    //     {
-    //         return NotFound();
-    //     }
-    //
-    //     if (scamReport.UserId != currentUser!.Id)
-    //     {
-    //         return Unauthorized();
-    //     }
-    //
-    //     context.ScamReports.Remove(scamReport);
-    //
-    //     await context.SaveChangesAsync();
-    //         
-    //     TempData["SuccessMessage"] = "Scam report deleted successfully.";
-    //
-    //     return RedirectToAction(nameof(ViewAll));
-    // }
-    
     public async Task<IActionResult> ViewAll()
     {
-        
-        var currentUser = await userManager.GetUserAsync(User);
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(currentUserId)) return Unauthorized();
 
-        var reports = await _scamReportService.GetScamReportsWithUserId(currentUser!.Id);
+        var reports = await _scamReportService.GetScamReportsWithUserId(currentUserId);
 
         var viewModel = reports.Select(r => new ViewAllReportViewModel
         {
@@ -179,31 +147,18 @@ public class ScamReportController(
             submitReportViewModel.ScamCategories = scamCategories.Select(category => new SelectListItem() { Text = category.Name, Value = category.Id.ToString() }).ToList();
             submitReportViewModel.ExternalAgencies = externalAgencies.Select(externalAgency => new SelectListItem() { Text = externalAgency.Name, Value = externalAgency.Id.ToString() }).ToList();
             
-            foreach (var key in ModelState.Keys)
-            {
-                var state = ModelState[key];
-                foreach (var error in state.Errors)
-                {
-                    Console.WriteLine($"Model error on '{key}': {error.ErrorMessage}");
-                }
-            }
-            
             return View(submitReportViewModel);
         }
         
-        var currentUser = await userManager.GetUserAsync(User);
-        
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var currentUserName = User.Identity?.Name;
+        var currentUserEmail = User.FindFirstValue(ClaimTypes.Email);
+
         if (User.Identity?.IsAuthenticated == true)
         {
-            submitReportViewModel.ReporterName = currentUser.Name;
-            submitReportViewModel.ReporterEmail = currentUser.Email;
-            
-            Console.Write(submitReportViewModel.ReporterName + " " + submitReportViewModel.ReporterEmail);
+            submitReportViewModel.ReporterName = currentUserName;
+            submitReportViewModel.ReporterEmail = currentUserEmail;
         }
-        
-        
-        
-        
         
         ScamReport report = new ScamReport
         {
@@ -213,11 +168,11 @@ public class ScamReportController(
             Description = submitReportViewModel.Description,
             ReporterName = submitReportViewModel.ReporterName,
             ReporterEmail = submitReportViewModel.ReporterEmail,
-            UserId = currentUser.Id,
+            UserId = currentUserId,
             CreatedAt = DateTime.Now,
             LastModified = DateTime.Now,
-            CreatedBy = User.Identity?.IsAuthenticated == true ? currentUser.Id : null,
-            ModifiedBy = User.Identity?.IsAuthenticated == true ? currentUser.Id : null,
+            CreatedBy = currentUserId,
+            ModifiedBy = currentUserId,
             DynamicData = "{}",
             Status = ReportStatus.Submitted
         };

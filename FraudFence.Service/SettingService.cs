@@ -16,7 +16,7 @@ public class SettingService : BaseService<Setting>
         throw new NotImplementedException();
     }
 
-    public async Task<Setting?> GetSettingByUserIdAndScamCategoryId(int userId, int scamCategoryId)
+    public async Task<Setting?> GetSettingByUserIdAndScamCategoryId(string userId, int scamCategoryId)
     {
         return await _context.Settings
             .IgnoreAutoIncludes()
@@ -33,7 +33,7 @@ public class SettingService : BaseService<Setting>
         await _context.SaveChangesAsync();
     }
 
-    public async Task<List<Setting>> GetAllSettingsByUserIdAsync(int userId)
+    public async Task<List<Setting>> GetAllSettingsByUserIdAsync(string userId)
     {
         return await _context.Settings
             .Include(s => s.ScamCategory)

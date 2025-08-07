@@ -1,15 +1,12 @@
 using FraudFence.Data;
-using FraudFence.EntityModels.Models;
 using FraudFence.Interface.Common;
 using FraudFence.Service;
 using FraudFence.Service.Common;
 using FraudFence.Web.Infrastructure;
 using FraudFence.Web.Infrastructure.Api;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Logging;
 using System.Globalization;
-using System.Text.Json;
 
 CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("en-MY");
 CultureInfo.DefaultThreadCurrentUICulture = new CultureInfo("en-MY");
@@ -21,31 +18,27 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services
     .AddDbContext<ApplicationDbContext>((sp, options) =>
     {
-        var _auditInt = sp.GetRequiredService<AuditInterceptor>();
+        var auditInt = sp.GetRequiredService<AuditInterceptor>();
 
         options.UseSqlServer(
             builder.Configuration.GetConnectionString("DefaultConnection"),
             sqlOptions => sqlOptions.EnableRetryOnFailure(2)
         )
-        .AddInterceptors(_auditInt);
+        .AddInterceptors(auditInt);
 #if DEBUG
         options.EnableSensitiveDataLogging();
 #endif
-    })
-    .AddIdentity<ApplicationUser, IdentityRole<int>>(opts =>
-    {
-        opts.SignIn.RequireConfirmedAccount = false;
-    })
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddDefaultTokenProviders();
+    });
 
-builder.Services.ConfigureApplicationCookie(opts =>
-{
-    opts.AccessDeniedPath = "/Home/Error/403";
-});
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Accounts/Login";
+        options.LogoutPath = "/Accounts/Logout";
+        options.AccessDeniedPath = "/Home/Error/403";
+    });
 
 builder.Services.AddControllersWithViews();
-
 builder.Services.AddRazorPages().AddRazorRuntimeCompilation();
 
 // Service Registrations to DI
@@ -61,25 +54,20 @@ builder.Services.AddScoped<ScamReportService>();
 builder.Services.AddScoped<PostService>();
 builder.Services.AddScoped<CommentService>();
 builder.Services.AddScoped<SettingService>();
-builder.Services.AddScoped<ScamCategoryService>();
 builder.Services.AddScoped<ArticleService>();
 builder.Services.AddScoped<NewsletterService>();
 
 builder.Services.AddHttpClient<ArticleApiClient>();
-
-#if DEBUG
-IdentityModelEventSource.ShowPII = true;
-#endif
+builder.Services.AddHttpClient("UsersApi");
 
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
     db.Database.Migrate();
-
-    await IdentitySeeder.SeedAsync(scope.ServiceProvider, builder.Configuration);
+    // Wait for the seeder to complete before continuing
+    CognitoSeeder.SeedAsync(scope.ServiceProvider, builder.Configuration).Wait();
 }
 
 if (app.Environment.IsDevelopment())
@@ -93,8 +81,6 @@ else
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
-app.UseXRay("FraudFence");
 app.UseStaticFiles();
 app.UseRouting();
 

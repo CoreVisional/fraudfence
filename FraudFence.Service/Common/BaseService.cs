@@ -1,10 +1,10 @@
 ﻿using FraudFence.Data;
-using FraudFence.EntityModels.common;
+using FraudFence.EntityModels.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace FraudFence.Service.Common
 {
-    public abstract class BaseService<T> where T : BaseEntity
+    public abstract class BaseService<T> where T : BaseEntity<int>
     {
         protected readonly ApplicationDbContext _context;
 

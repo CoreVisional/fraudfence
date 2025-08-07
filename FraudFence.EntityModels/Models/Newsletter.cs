@@ -1,8 +1,8 @@
-﻿using FraudFence.EntityModels.common;
+﻿using FraudFence.EntityModels.Common;
 
 namespace FraudFence.EntityModels.Models
 {
-    public class Newsletter : BaseEntity
+    public class Newsletter : BaseEntity<int>
     {
         public required string Subject { get; set; }
 

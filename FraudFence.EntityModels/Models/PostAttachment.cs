@@ -1,8 +1,8 @@
-﻿using FraudFence.EntityModels.common;
+﻿using FraudFence.EntityModels.Common;
 
 namespace FraudFence.EntityModels.Models
 {
-    public class PostAttachment : BaseEntity
+    public class PostAttachment : BaseEntity<int>
     {
         public int PostId { get; set; }
 

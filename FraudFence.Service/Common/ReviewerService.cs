@@ -48,7 +48,7 @@ namespace FraudFence.Service.Common
                 .FirstOrDefaultAsync(r => r.Id == id && !r.IsDisabled);
         }
 
-        public async Task UpdateScamReportAsync(ScamReport report, List<int> reviewerIds, int? externalAgencyId, string investigationNotes, EntityModels.Enums.ReportStatus status)
+        public async Task UpdateScamReportAsync(ScamReport report, List<string> reviewerIds, int? externalAgencyId, string investigationNotes, EntityModels.Enums.ReportStatus status)
         {
             var dbReport = await _context.ScamReports
                 .IgnoreAutoIncludes()

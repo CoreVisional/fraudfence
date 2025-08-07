@@ -2,8 +2,8 @@
 {
     public static class SystemConstants
     {
-        public const int SystemUserId = -1;
+        public const string SystemUserId = "SYSTEM";
 
-        public const int GuestUserId = 0;
+        public const string GuestUserId = "GUEST";
     }
 }

@@ -73,7 +73,7 @@ public class PostService : BaseService<Post>
             .ToListAsync();
     }
 
-    public async Task<List<Post>> GetMyPosts(int userId)
+    public async Task<List<Post>> GetMyPosts(string userId)
     {
         return await _context.Posts
             .IgnoreQueryFilters()

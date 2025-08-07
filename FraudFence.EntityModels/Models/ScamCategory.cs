@@ -1,8 +1,8 @@
-﻿using FraudFence.EntityModels.common;
+﻿using FraudFence.EntityModels.Common;
 
 namespace FraudFence.EntityModels.Models
 {
-    public class ScamCategory : BaseEntity
+    public class ScamCategory : BaseEntity<int>
     {
         public required string Name { get; set; }
 

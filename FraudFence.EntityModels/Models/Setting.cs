@@ -1,10 +1,10 @@
-﻿using FraudFence.EntityModels.common;
+﻿using FraudFence.EntityModels.Common;
 
 namespace FraudFence.EntityModels.Models
 {
-    public class Setting : BaseEntity
+    public class Setting : BaseEntity<int>
     {
-        public int UserId { get; set; }
+        public string UserId { get; set; }
 
         public int ScamCategoryId { get; set; }
 

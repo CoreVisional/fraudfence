@@ -1,8 +1,8 @@
-﻿using FraudFence.EntityModels.common;
+﻿using FraudFence.EntityModels.Common;
 
 namespace FraudFence.EntityModels.Models
 {
-    public class ScamReportAttachment : BaseEntity
+    public class ScamReportAttachment : BaseEntity<int>
     {
         public int ScamReportId { get; set; }
 

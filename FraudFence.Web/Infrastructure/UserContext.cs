@@ -13,7 +13,7 @@ namespace FraudFence.Web.Infrastructure
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public int Id
+        public string Id
         {
             get
             {
@@ -27,13 +27,10 @@ namespace FraudFence.Web.Infrastructure
                 if (!httpContext.User.Identity?.IsAuthenticated ?? true)
                     return SystemConstants.GuestUserId;
 
-                var idClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                             ?? throw new InvalidOperationException("User ID claim missing.");
+                // In Cognito JWTs, the user's unique ID is in the 'sub' claim, which maps to NameIdentifier.
+                var idClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-                if (!int.TryParse(idClaim, out var id))
-                    throw new InvalidOperationException($"Invalid user ID format: '{idClaim}'.");
-
-                return id;
+                return idClaim ?? throw new InvalidOperationException("User ID claim (sub) missing.");
             }
         }
     }

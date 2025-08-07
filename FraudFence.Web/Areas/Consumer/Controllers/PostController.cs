@@ -1,37 +1,28 @@
 using System.Security.Claims;
-using FraudFence.Data;
-using FraudFence.EntityModels.Enums;
 using FraudFence.EntityModels.Models;
 using FraudFence.Service;
 using FraudFence.Service.Common;
 using FraudFence.Web.Areas.Consumer.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace FraudFence.Web.Areas.Consumer.Controllers;
 
 [Area("Consumer")]
 [Authorize(Roles = "Consumer")]
-public class PostController(UserManager<ApplicationUser> userManager, PostService postService, CommentService commentService) : Controller
+public class PostController(PostService postService, CommentService commentService) : Controller
 {
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddComment(CommentViewModel commentViewModel)
     {
-        
         if (!ModelState.IsValid || string.IsNullOrWhiteSpace(commentViewModel.Content))
         {
             return BadRequest("Comment content is required.");
         }
 
-        int userId;
-        try
-        {
-            userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
-        }
-        catch
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized();
         }
@@ -59,19 +50,6 @@ public class PostController(UserManager<ApplicationUser> userManager, PostServic
     [HttpGet]
     public async Task<IActionResult> ViewComment(int id)
     {
-        int userId = 0;
-
-        try
-        {
-            userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
-        }
-        catch
-        {
-            return Unauthorized();
-        }
-
-
-
         var post = await postService.GetPostCompleteById(id);
         
         CommentViewModel model = new CommentViewModel
@@ -80,14 +58,11 @@ public class PostController(UserManager<ApplicationUser> userManager, PostServic
         };
         
         return View(model);
-        
     }
     
     [HttpGet]
     public async Task<IActionResult> MyFeed()
     {
-        int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-
         var posts = await postService.GetAcceptedPosts();
 
         var model = new PostViewModel
@@ -95,14 +70,17 @@ public class PostController(UserManager<ApplicationUser> userManager, PostServic
             Posts = posts
         };
         
-
         return View(model);
     }
     
     [HttpGet]
     public async Task<IActionResult> MyPosts()
     {
-        int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
 
         var posts = await postService.GetMyPosts(userId);
 
@@ -111,15 +89,13 @@ public class PostController(UserManager<ApplicationUser> userManager, PostServic
             Posts = posts
         };
         
-
         return View(model);
     }
 
     [HttpGet]
     public async Task<IActionResult> Edit(int id)
     {
-        var currentUser = await userManager.GetUserAsync(User);
-        
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         Post? post = await postService.GetPostById(id);
 
         if (post == null)
@@ -127,7 +103,7 @@ public class PostController(UserManager<ApplicationUser> userManager, PostServic
             return NotFound();
         }
         
-        if (currentUser == null || post.UserId != currentUser!.Id)
+        if (string.IsNullOrEmpty(currentUserId) || post.UserId != currentUserId)
         {
             return Unauthorized();
         }
@@ -139,15 +115,13 @@ public class PostController(UserManager<ApplicationUser> userManager, PostServic
         };
         
         return View(vm);
-        
     }
     
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(EditPostViewModel editPostViewModel)
     {
-        var currentUser = await userManager.GetUserAsync(User);
-        
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         Post? post = await postService.GetPostById(editPostViewModel.Id);
         
         if (post == null)
@@ -155,14 +129,12 @@ public class PostController(UserManager<ApplicationUser> userManager, PostServic
             return NotFound();
         }
 
-        if (currentUser == null || post.UserId != currentUser!.Id)
+        if (string.IsNullOrEmpty(currentUserId) || post.UserId != currentUserId)
         {
             return Unauthorized();
         }
         
         post.Content = editPostViewModel.Content;
-        
-        
 
         await postService.UpdatePost(post);
             
@@ -175,17 +147,15 @@ public class PostController(UserManager<ApplicationUser> userManager, PostServic
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
-        var currentUser = await userManager.GetUserAsync(User);
-        
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         Post? post = await postService.GetPostById(id);
-        
         
         if (post == null)
         {
             return NotFound();
         }
 
-        if (currentUser == null || post.UserId != currentUser!.Id)
+        if (string.IsNullOrEmpty(currentUserId) || post.UserId != currentUserId)
         {
             return Unauthorized();
         }
@@ -196,6 +166,4 @@ public class PostController(UserManager<ApplicationUser> userManager, PostServic
 
         return RedirectToAction(nameof(MyPosts));
     }
-    
-    
 }

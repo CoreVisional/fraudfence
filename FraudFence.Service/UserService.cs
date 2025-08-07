@@ -1,157 +1,96 @@
 ﻿using FraudFence.EntityModels.Dto;
-using FraudFence.EntityModels.Models;
-using Microsoft.AspNetCore.Identity;
-using System.Security.Claims;
-using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Threading.Tasks;
+using System.IO;
+using System.Net.Http;
+
 
 namespace FraudFence.Service
 {
     public sealed class UserService
     {
-        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly HttpClient _httpClient;
+        private readonly string _apiBaseUrl;
+        private readonly Data.ApplicationDbContext _context;
 
-        private readonly RoleManager<IdentityRole<int>> _roleManager;
-
-        public UserService(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole<int>> roleManager)
+        public UserService(IHttpClientFactory httpClientFactory, Microsoft.Extensions.Configuration.IConfiguration configuration, Data.ApplicationDbContext context)
         {
-            _userManager = userManager;
-            _roleManager = roleManager;
+            _httpClient = httpClientFactory.CreateClient("UsersApi");
+            _apiBaseUrl = configuration["AWS:ApiGateway:UserManagementApiUrl"]!;
+            _context = context;
         }
 
-        public async Task<(IdentityResult Result, ApplicationUser? User)> CreateAsync(RegistrationDTO dto)
+        public async Task<List<UserViewModel>> GetUsersAsync()
         {
-            var user = new ApplicationUser
-            {
-                UserName = dto.Email,
-                Email = dto.Email,
-                Name = dto.Name
-            };
-
-            var result = await _userManager.CreateAsync(user, dto.Password);
-            if (!result.Succeeded) return (result, null);
-
-            await _userManager.AddToRoleAsync(user, "Consumer");
-
-            await _userManager.AddClaimsAsync(user, [new Claim("FullName", user.Name), new Claim(ClaimTypes.Email, user.Email!)]);
-
-            return (result, user);
+            var response = await _httpClient.GetAsync($"{_apiBaseUrl}/users");
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<List<UserViewModel>>() ?? new List<UserViewModel>();
         }
 
-        public async Task<List<UserViewModel>> GetUsersAsync(string search = null, string role = null)
+        public async Task<UserViewModel?> GetUserByIdAsync(string id)
         {
-            var users = _userManager.Users.ToList();
-            var userViewModels = new List<UserViewModel>();
-            foreach (var u in users)
+            var response = await _httpClient.GetAsync($"{_apiBaseUrl}/users/{id}");
+            if (response.IsSuccessStatusCode)
             {
-                var roles = await _userManager.GetRolesAsync(u);
-                userViewModels.Add(new UserViewModel
-                {
-                    Id = u.Id,
-                    Name = u.Name,
-                    Email = u.Email,
-                    UserName = u.UserName,
-                    PhoneNumber = u.PhoneNumber,
-                    IsActive = !u.LockoutEnabled || (u.LockoutEnd == null || u.LockoutEnd <= DateTimeOffset.Now),
-                    Roles = roles.ToList()
-                });
+                return await response.Content.ReadFromJsonAsync<UserViewModel>();
             }
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                userViewModels = userViewModels.Where(u =>
-                    (u.Name != null && u.Name.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                    (u.Email != null && u.Email.Contains(search, StringComparison.OrdinalIgnoreCase))
-                ).ToList();
-            }
-            if (!string.IsNullOrWhiteSpace(role))
-            {
-                userViewModels = userViewModels.Where(u => u.Roles.Contains(role)).ToList();
-            }
-            return userViewModels;
+            return null;
         }
 
-        public List<string> GetAllRoles(bool excludeAdmin = false)
+        public async Task<bool> CreateUserAsync(CreateUserViewModel model)
         {
-            var roles = _roleManager.Roles.Select(r => r.Name).ToList();
-            if (excludeAdmin)
-                roles = roles.Where(r => r != "Admin").ToList();
-            return roles;
-        }
+            var registrationDto = new RegistrationDTO(model.Name, model.Email, model.Password);
+            var response = await _httpClient.PostAsJsonAsync($"{_apiBaseUrl}/register", registrationDto);
 
-        public async Task<(IdentityResult Result, ApplicationUser? User)> CreateUserAsync(CreateUserViewModel model)
-        {
-            var existingUser = await _userManager.FindByEmailAsync(model.Email);
-            if (existingUser != null)
+            if (!response.IsSuccessStatusCode)
             {
-                var error = IdentityResult.Failed(new IdentityError { Description = "A user with this email already exists." });
-                return (error, null);
+                return false;
             }
-            var user = new ApplicationUser
-            {
-                UserName = model.Email,
-                Email = model.Email,
-                Name = model.Name,
-                PhoneNumber = model.PhoneNumber
-            };
-            var result = await _userManager.CreateAsync(user, model.Password);
-            if (!result.Succeeded) return (result, null);
-            await _userManager.AddToRoleAsync(user, model.Role);
-            await _userManager.AddClaimAsync(user, new System.Security.Claims.Claim("FullName", user.Name));
-            return (result, user);
-        }
 
-        public async Task<EditUserViewModel?> GetEditUserViewModelAsync(int id)
-        {
-            var user = await _userManager.FindByIdAsync(id.ToString());
-            if (user == null) return null;
-            return new EditUserViewModel
-            {
-                Id = user.Id,
-                Name = user.Name,
-                Email = user.Email,
-                PhoneNumber = user.PhoneNumber
-            };
-        }
+            var responseBody = await response.Content.ReadFromJsonAsync<JsonElement>();
+            var userId = responseBody.GetProperty("userId").GetString();
 
-        public async Task<IdentityResult> EditUserAsync(EditUserViewModel model)
-        {
-            var user = await _userManager.FindByIdAsync(model.Id.ToString());
-            if (user == null) return IdentityResult.Failed(new IdentityError { Description = "User not found." });
-            var existingUser = await _userManager.FindByEmailAsync(model.Email);
-            if (existingUser != null && existingUser.Id != user.Id)
+            if (string.IsNullOrEmpty(userId))
             {
-                return IdentityResult.Failed(new IdentityError { Description = "A user with this email already exists." });
+                return false;
             }
-            user.Name = model.Name;
-            user.Email = model.Email;
-            user.UserName = model.Email;
-            user.PhoneNumber = model.PhoneNumber;
-            return await _userManager.UpdateAsync(user);
+
+            var groupData = new { groupName = model.Role };
+            await _httpClient.PostAsJsonAsync($"{_apiBaseUrl}/users/{userId}/groups", groupData);
+
+            // Also update the user's phone number in the local DB
+            var user = await _context.Users.FindAsync(userId);
+            if (user != null)
+            {
+                user.PhoneNumber = model.PhoneNumber;
+                await _context.SaveChangesAsync();
+            }
+
+            return true;
         }
 
-        public async Task ToggleActiveAsync(int id)
+        public async Task<bool> EditUserAsync(EditUserViewModel model)
         {
-            var user = await _userManager.FindByIdAsync(id.ToString());
-            if (user == null) return;
-            if (user.LockoutEnabled && user.LockoutEnd > DateTimeOffset.Now)
-            {
-                // Activate
-                user.LockoutEnd = null;
-                user.LockoutEnabled = false;
-            }
-            else
-            {
-                // Deactivate
-                user.LockoutEnd = DateTimeOffset.MaxValue;
-                user.LockoutEnabled = true;
-            }
-            await _userManager.UpdateAsync(user);
+            var response = await _httpClient.PutAsJsonAsync($"{_apiBaseUrl}/users/{model.Id}", model);
+            return response.IsSuccessStatusCode;
         }
 
-        public async Task DeleteUserAsync(int id)
+        public async Task<bool> DeleteUserAsync(string id)
         {
-            var user = await _userManager.FindByIdAsync(id.ToString());
-            if (user == null) return;
-            await _userManager.DeleteAsync(user);
+            var response = await _httpClient.DeleteAsync($"{_apiBaseUrl}/users/{id}");
+            return response.IsSuccessStatusCode;
+        }
+
+        // The concept of "locking" a user is handled by disabling them in Cognito.
+        // This will be a future implementation if required.
+        public Task ToggleActiveAsync(string id)
+        {
+            // To be implemented: This would involve a call to an "update" or "disable" endpoint
+            // in our Users API, which would then call AdminDisableUser in Cognito.
+            return Task.CompletedTask;
         }
     }
 }
